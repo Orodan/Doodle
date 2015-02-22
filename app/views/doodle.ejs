@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Doodle</title>
+
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css"> <!-- load bootstrap css -->
+
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">  <!-- load fontawesome -->
+
+    <link rel="stylesheet" href="/css/style.css">  
+
+    <style>
+        body { padding-top: 80px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <% if (message.length > 0) { %>
+            <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
+                <%= message %>
+            </div>
+        <% } %>
+
+        <div class="col-sm-8 ">
+            <div class="jumbotron text-center">
+                <h1>Doodle</h1>
+                <br/>
+
+                <% if (doodle) { %>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <% for (var key in doodle.schedules) { %>
+                                    <th scope="col"><%= doodle.schedules[key].begin_date %> <br/> <%= doodle.schedules[key].end_date %></th>
+                                <% } %>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% for (var key in doodle.users) { %>
+                                <tr>
+                                    <td scope="row"><%= doodle.users[key].first_name %> <%= doodle.users[key].last_name %></td>
+                                    <% for ( var key2 in doodle.users[key].votes ) { %>
+                                        <td><%= doodle.users[key].votes[key2].vote %></td>
+                                    <% } %>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="col-sm-4 ">
+             <div class="jumbotron text-center">
+                <% if (user_statut == 'admin' ) { %>
+                    <a href='<%= doodle.id %>/add-user'>Add user</a><br>
+                    <a href='<%= doodle.id %>/add-schedule'>Add schedule</a><br>
+                <% } %>
+                <a href='<%= doodle.id %>/add-vote'>Add vote</a>
+             </div>
+        </div>
+
+        <% if (user_statut == 'admin' ) { %>
+            <div class="col-sm-4 ">
+                 <div class="jumbotron text-center">
+                    <a href='<%= doodle.id %>/remove-user'>Remove user</a><br>
+                    <a href='<%= doodle.id %>/delete-schedule'>Remove schedule</a><br>
+                 </div>
+            </div>
+        <% } %>
+
+
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/script.js"></script>
+</body>
+</html>

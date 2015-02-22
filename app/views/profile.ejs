@@ -1,0 +1,76 @@
+<!-- views/profile.ejs -->
+<!doctype html>
+<html>
+<head>
+    <title>Doodle</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+    <style>
+        body        { padding-top:80px; word-wrap:break-word; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="page-header text-center">
+        <h1><span class="fa fa-anchor"></span> Profile Page</h1>
+        <a href="/logout" class="btn btn-default btn-sm">Logout</a>
+    </div>
+
+    <div class="row">
+
+        <!-- ALERT MESSAGE -->
+        <% if (message && message.length > 0) { %>
+            <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
+                <%= message %>
+            </div>
+        <% } %>
+
+        <!-- USER INFORMATIONS -->
+        <div class="col-sm-6">
+            <div class="well">
+                <h3><span class="fa fa-user"></span> Informations</h3>
+
+                    <% if (user) { %>
+                        <p>
+                            <% for (var key in user ) { %>
+                                <% if (typeof user[key] != 'function' ) { %>
+                                    <strong><%= key %></strong>: <%= user[key] %><br>
+                                <% } %>
+                            <% } %>
+                        </p>
+                    <% } %>
+
+            </div>
+        </div>
+
+        <!-- DOODLES INFORMATIONS -->
+         <div class="col-sm-6">
+            <div class="well">
+                <h3><span class="fa fa-archive"></span> Mes doodles</h3>
+                    <% if (doodles) { %>
+                        <ul>
+                            <% for(var key in doodles) { %>
+                                <li>
+                                    <strong><%= doodles[key].id %></strong><br>
+                                    <%= doodles[key].name %><br>
+                                    <%= doodles[key].description %><br>
+                                    <a href='/doodle/<%= doodles[key].id %>'>Access doodle</a><br>
+                                    <% if (doodles[key].user_statut == 'admin') { %>
+                                        <a href='/doodle/delete/<%= doodles[key].id %>'>Remove doodle</a>
+                                    <% } %>
+                                </li>
+                                <br>
+                            <% } %>
+                        </ul>
+                    <% } %>
+                <br>
+                <a href="/new-doodle" class="btn btn-default btn-sm">Create doodle</a>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>

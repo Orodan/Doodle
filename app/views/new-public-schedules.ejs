@@ -1,0 +1,62 @@
+<!-- views/index.ejs -->
+<!doctype html>
+<html>
+<head>
+    <title>Doodle</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css"> <!-- load bootstrap css -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css"> <!-- load fontawesome -->
+    <style>
+        body        { padding-top:80px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="col-sm-6 col-sm-offset-3">
+
+            <div class="jumbotron text-center">
+                <h1><span class="fa fa-money"></span> Doodle</h1>
+
+                <p>Choose the schedules</p><br/>
+
+                <% if (typeof message != 'undefined' && message.length > 0) { %>
+                    <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
+                        <%= message %>
+                    </div>
+                <% } %>
+
+                <form action="#" method="post">
+
+                    <div id="public-schedules">
+                        <div class="form-inline">
+
+                            <div class="form-group" style="width: 49%;">
+                                <input type="date" name='schedules[0][begin_date]' class="form-control">
+                            </div>
+                            <div class="form-group" style="width: 49%;"> 
+                                <input type="text" name='schedules[0][begin_hour]' placeholder="HH:mm" class="form-control"> 
+                            </div> 
+
+                            <div class="form-group" style="width: 49%;">
+                                <input type="date" name='schedules[0][end_date]' class="form-control">
+                            </div>
+                            <div class="form-group" style="width: 49%;"> 
+                                <input type="text" name='schedules[0][end_hour]' placeholder="HH:mm" class="form-control"> 
+                            </div> 
+                        </div>
+                        <br/>
+                    </div>
+
+                    <button class="btn btn-primary" id="add-schedule">Add schedule</button>
+                    <br/><br/>
+
+                    <button type="submit" class="btn btn-default">Submit</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/script.js"></script>
+</body>
+</html>
