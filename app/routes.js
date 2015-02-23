@@ -359,11 +359,14 @@ module.exports = function (app, passport) {
     // =====================================
     // NEW PUBLIC USER =====================
     // =====================================
+
+    // !!!!!! DESACTIVATED 
     // Show the user form
     app.get('/new-public-user', function (req, res) {
         res.render('new-public-user');
     });
 
+    // !!!!!! DESACTIVATED 
     // Process the user form
     app.post('/new-public-user', function (req, res) {
 
@@ -380,7 +383,9 @@ module.exports = function (app, passport) {
     // =====================================
     // Show the doodle form
     app.get('/new-public-doodle', function (req, res) {
-        res.render('new-public-doodle');
+        res.render('new-public-doodle', {
+            message : req.flash.message
+        });
     });
 
     // Process the doodle form
@@ -405,56 +410,43 @@ module.exports = function (app, passport) {
     // Process the schedules form
     app.post('/new-public-schedules', function (req, res) {
 
-        // We create the temporary user
-        User.newPublicUser(req.session.user, function (err, user_id) {
+        // We create the doodle 
+        Doodle.newPublic(req.session.doodle, function (err, doodle) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
                 res.redirect('index');
             }
             else {
 
-                // We create the doodle 
-                Doodle.new(req.session.doodle, user_id, function (err, doodle) {
+                // We create the schedules of the doodle
+                Doodle.addSchedules(doodle.id, req.body.schedules, function (err, result) {
                     if (err) {
                         req.flash('message', 'An error occured : ' + err);
                         res.redirect('index');
                     }
                     else {
 
-                        // We create the schedules of the doodle
-                        Doodle.addSchedules(doodle.id, req.body.schedules, function (err, result) {
+                        var doodle_admin_id = uuid.v4(); 
+                        var admin_link = req.headers.host + '/admin-public-doodle/' + doodle_admin_id;
+                        var user_link = req.headers.host + '/public-doodle/' + doodle.id;
+
+                        // We generate and associate a administration link to the doodle
+                        Doodle.addDoodleAdminLink(doodle.id, admin_link, function (err, result) {
                             if (err) {
                                 req.flash('message', 'An error occured : ' + err);
-                                res.redirect('index');
+                                res.redirect('/');
                             }
                             else {
+                                req.session.doodle_administration_link = admin_link;
+                                req.session.doodle_user_link = user_link;
 
-                                var doodle_admin_id = uuid.v4(); 
-                                var admin_link = req.headers.host + '/admin-public-doodle/' + doodle_admin_id;
-                                var user_link = req.headers.host + '/user-public-doodle/' + doodle.id;
-
-                                // We generate and associate a administration link to the doodle
-                                Doodle.addDoodleAdminLink(doodle.id, admin_link, function (err, result) {
-                                    if (err) {
-                                        req.flash('message', 'An error occured : ' + err);
-                                        res.redirect('/');
-                                    }
-                                    else {
-                                        req.session.doodle_administration_link = admin_link;
-                                        req.session.doodle_user_link = user_link;
-
-                                        console.log(req.session.doodle_administration_link);
-                                        console.log(req.session.doodle_user_link);
-
-                                        res.redirect('/index-public-doodle');
-                                    }
-                                });
+                                res.redirect('/index-public-doodle');
                             }
                         });
                     }
-                })
+                });
             }
-        });
+        })
     });
 
     // =====================================
@@ -478,14 +470,14 @@ module.exports = function (app, passport) {
     });
 
     // Show the public doodle for user
-    app.get('/user-public-doodle/:id', function (req, res) {
+    app.get('/public-doodle/:id', function (req, res) {
 
         Doodle.getAllInformations(req.params.id, function (err, doodle) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
             }
 
-            res.render('user-public-doodle', {
+            res.render('public-doodle', {
                 doodle : doodle,
                 message : req.flash('message')
             });
@@ -494,8 +486,82 @@ module.exports = function (app, passport) {
 
     // Show the public doodle for admin
     app.get('/admin-public-doodle', function (req, res) {
-
+        // To Do
     });
+
+    // =====================================
+    // ADD PUBLIC USER =====================
+    // =====================================
+    // Show add public user form
+    app.get('/public-doodle/:id/add-public-user', function (req, res) {
+        res.render('add-public-user');
+    });
+
+    // Process add public user form
+    app.post('/public-doodle/:id/add-public-user', function (req, res) {
+
+        // We create the new temporary user
+        User.newPublicUser(req.body, function (err, user_id) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+                res.redirect('/public-doodle/' + req.params.id);
+            }
+            else {
+
+                // We associate the new user with the doodle
+                Doodle.addPublicUser(req.params.id, user_id, function (err, result) {
+                    if (err) {
+                        req.flash('message', 'An error occured : ' + err);
+                        res.redirect('/public-doodle/' + req.params.id);
+                    }
+                    else {
+                        req.session.user_id = user_id;
+                        res.redirect('/public-doodle/' + req.params.id + '/add-public-vote');
+                    }
+                });
+            }
+        });
+    });
+
+    // =====================================
+    // ADD PUBLIC VOTE =====================
+    // =====================================
+    // Show add public vote form
+    app.get('/public-doodle/:id/add-public-vote', function (req, res) {
+
+        Doodle.getSchedules(req.params.id, function (err, schedules) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+                res.redirect('/public-doodle/' + req.params.id);
+            }
+            else {
+                res.render('add-public-vote', {
+                    schedules : schedules
+                });
+            }
+        });
+    });
+
+    // Process add public vote form
+    app.post('/public-doodle/:id/add-public-vote', function (req, res) {
+
+        var id = req.params.id;
+        var user_id = req.session.user_id;
+
+        Doodle.saveVotes(id, user_id, req.body.schedules, function (err, result) {
+            if (err) {
+                req.flash('message', 'An error occured : ' +err);
+            }
+            else {
+                req.flash('message', 'User created !');
+            }
+
+            req.session.user_id = null;
+            res.redirect('/public-doodle/' + id);
+        });
+    });
+
+
 
     // =====================================
     // MIDDLEWARE ==========================

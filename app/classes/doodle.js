@@ -8,6 +8,33 @@ module.exports = doodle;
 // FUNCTIONS ===============================================================
 
 /**
+*	Create a new public doodle from the data
+* 	It is not associated with any user at the begining
+**/
+doodle.newPublic = function (data, callback) {
+
+	var id = uuid.v4();
+
+	var query = 'INSERT INTO Doodle.doodle (id, name, description) values (?, ?, ?)';
+	doodle.db.execute(query, [ id, data.name, data.description ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		query = 'SELECT * FROM Doodle.doodle WHERE id = ?';
+		doodle.db.execute(query, [ id ], { prepare : true }, function (err, data) {
+			if (err) {
+				return callback(err);
+			}
+
+			return callback(null, data.rows[0]);
+		});
+	});
+
+
+}
+
+/**
 *	Create a new private doodle from the data
 *	@return The new doodle created
 **/
@@ -404,7 +431,7 @@ doodle.checkUserByEmail = function (email, callback) {
 		else {
 			return callback(null, false);
 		}
-	});
+	});	
 }
 
 /**
@@ -445,6 +472,20 @@ doodle.addDoodleAdminLink = function (id, admin_link, callback) {
 		return callback(null, true);
 	});
 
+}
+
+/**
+*	Save several votes associated with the doodle, the user and the schedules
+**/
+doodle.saveVotes = function (doodle_id, user_id, params, callback) {
+
+	doodle.__processSaveVotes(doodle_id, user_id, params, 0, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, true);
+	});
 }
 
 /**
@@ -571,6 +612,26 @@ doodle.associateScheduleToDoodle = function (doodle_id, schedule_id, callback) {
 		}
 
 		return callback(null, true);
+	});
+}
+
+/**
+*	Associate a public user to a doodle
+**/
+doodle.addPublicUser = function(id, user_id, callback) {
+
+	doodle.addUserToDoodle(id, user_id, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		doodle.addDoodleToUser(user_id, id, function (err, result) {
+			if (err) {
+				return callback(err);
+			}
+
+			return callback(null, true);
+		})
 	});
 }
 
@@ -1327,7 +1388,7 @@ doodle.__processDeleteSchedulesFromIds = function (schedule_ids, key, callback) 
 }
 
 /**
-*	Recursive function to save many schedules to the doodle
+*	Recursive function to save several schedules to the doodle
 **/
 doodle.__processAddSchedules = function (id, schedules, key, callback) {
 
@@ -1346,6 +1407,32 @@ doodle.__processAddSchedules = function (id, schedules, key, callback) {
 	else {
 		return callback(null, true);
 	}
+}
+
+/**
+*	Recursive function to save several votes to the doodle
+**/
+doodle.__processSaveVotes = function (id, user_id, schedules, key, callback) {
+
+	if ( schedules.length != key ) {
+
+		var schedule_id = schedules[key].id;
+		var vote = schedules[key].vote;
+
+		var query = 'INSERT INTO Doodle.votes_by_user (doodle_id, user_id, schedule_id, vote) values (?, ?, ?, ?)';
+		doodle.db.execute(query, [ id, user_id, schedule_id, Number(vote) ], { prepare : true }, function (err, result) {
+			if (err) {
+				return callback(err);
+			}
+
+			key++;
+			doodle.__processSaveVotes(id, user_id, schedules, key, callback);
+		});
+	}
+	else {
+		return callback(null, true);
+	}
+
 }
 
 
