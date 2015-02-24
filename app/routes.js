@@ -6,6 +6,8 @@ var uuid = require('node-uuid');
 
 module.exports = function (app, passport) {
 
+
+
 	// =====================================
     // HOME PAGE ===========================
     // =====================================
@@ -14,6 +16,8 @@ module.exports = function (app, passport) {
             message : req.flash('message')
         });
     });
+
+
 
     // =====================================
     // LOGIN ===============================
@@ -31,6 +35,8 @@ module.exports = function (app, passport) {
         successFlash : true             // allow flash messages on success
     }));
 
+
+
     // =====================================
     // SIGNUP ==============================
     // =====================================
@@ -45,6 +51,8 @@ module.exports = function (app, passport) {
     	failureRedirect : '/signup',	// redirect back to the signup page if there is an error
     	failureFlash : true				// allow flash messages
     }));
+
+
 
     // =====================================
     // PROFILE SECTION =====================
@@ -66,6 +74,8 @@ module.exports = function (app, passport) {
         });
     });
 
+
+
     // =====================================
     // LOGOUT ==============================
     // =====================================
@@ -74,9 +84,14 @@ module.exports = function (app, passport) {
     	res.redirect('/');
     });
 
+
+
+
     // ==========================================================================
     // PRIVATE DOODLE SECTION ===================================================
     // ==========================================================================
+
+
 
     // =====================================
     // NEW PRIVATE DOODLE ==================
@@ -101,6 +116,8 @@ module.exports = function (app, passport) {
         });
     });
 
+
+
     // =====================================
     // SHOW DOODLE =========================
     // =====================================
@@ -115,7 +132,6 @@ module.exports = function (app, passport) {
 
             // We check the persmision of the user ( admin or just user )
             Doodle.getUserAccess(req.params.id, user_id, function (err, result) {
-
                 if (err) {
                     req.flash('message', 'An error occured : ' + err);
                 }
@@ -138,6 +154,8 @@ module.exports = function (app, passport) {
         });
     });
 
+
+
     // =====================================
     // DELETE DOODLE =======================
     // =====================================
@@ -156,6 +174,7 @@ module.exports = function (app, passport) {
     });
 
     
+
     // =====================================
     // ADD USER ============================
     // =====================================
@@ -180,6 +199,8 @@ module.exports = function (app, passport) {
         });
 
     });
+
+
 
     // =====================================
     // REMOVE USER =========================
@@ -245,6 +266,8 @@ module.exports = function (app, passport) {
         });
     });
 
+
+
     // =====================================
     // ADD SCHEDULE ========================
     // =====================================
@@ -271,6 +294,8 @@ module.exports = function (app, passport) {
         });
 
     });
+
+
 
     // =====================================
     // DELETE SCHEDULE =====================
@@ -310,6 +335,7 @@ module.exports = function (app, passport) {
             res.redirect('/doodle/' + id);
         })
     });
+
 
 
     // =====================================
@@ -352,9 +378,12 @@ module.exports = function (app, passport) {
     });
 
 
+
     // ==========================================================================
     // PUBLIC DOODLE SECTION ===================================================
     // ==========================================================================
+
+
 
     // =====================================
     // NEW PUBLIC USER =====================
@@ -378,6 +407,8 @@ module.exports = function (app, passport) {
         res.redirect('/new-public-doodle');
     });
 
+
+
     // =====================================
     // NEW PUBLIC DOODLE ===================
     // =====================================
@@ -398,6 +429,30 @@ module.exports = function (app, passport) {
 
         res.redirect('/new-public-schedules');
     });
+
+
+
+    // =====================================
+    // DELETE PUBLIC DOODLE ================
+    // =====================================
+    // Delete a public doodle
+    app.get('/public-doodle/:id/remove-public-doodle', function (req, res) {
+
+        var admin_link_id = req.session.admin_link_id;
+        req.session.administration_link_id = null;
+
+        Doodle.deletePublicDoodle(req.params.id, admin_link_id, function (err, result) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+            }
+            else {
+                req.flash('message', 'Doodle deleted !');
+            }
+
+            res.redirect('/');
+        });
+    });
+
 
     // =====================================
     // NEW PUBLIC SCHEDULES ================
@@ -426,19 +481,17 @@ module.exports = function (app, passport) {
                     }
                     else {
 
-                        var doodle_admin_id = uuid.v4(); 
-                        var admin_link = req.headers.host + '/admin-public-doodle/' + doodle_admin_id;
                         var user_link = req.headers.host + '/public-doodle/' + doodle.id;
 
                         // We generate and associate a administration link to the doodle
-                        Doodle.addDoodleAdminLink(doodle.id, admin_link, function (err, result) {
+                        Doodle.generateLinks(doodle.id, function (err, data) {
                             if (err) {
                                 req.flash('message', 'An error occured : ' + err);
                                 res.redirect('/');
                             }
                             else {
-                                req.session.doodle_administration_link = admin_link;
-                                req.session.doodle_user_link = user_link;
+                                req.session.doodle_administration_link = req.headers.host + '/public-doodle/' + data.admin_link_id;
+                                req.session.doodle_user_link = req.headers.host + '/public-doodle/' + data.user_link_id;
 
                                 res.redirect('/index-public-doodle');
                             }
@@ -448,6 +501,8 @@ module.exports = function (app, passport) {
             }
         })
     });
+
+
 
     // =====================================
     // SHOW PUBLIC DOODLE ==================
@@ -469,25 +524,53 @@ module.exports = function (app, passport) {
         });
     });
 
-    // Show the public doodle for user
+    // Show the public doodle 
     app.get('/public-doodle/:id', function (req, res) {
 
-        Doodle.getAllInformations(req.params.id, function (err, doodle) {
+        // We check if we are on an administration link or just an user link
+        Doodle.checkAdminLinkId(req.params.id, function (err, result) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
             }
 
-            res.render('public-doodle', {
-                doodle : doodle,
-                message : req.flash('message')
-            });
+            // If the administration link was called -> true
+            // If the user link was called -> false
+            var admin = result;
+
+            if (admin) {
+                // We get the informations about the doodle from the administration_link_id
+                Doodle.getAllInformationsFromAdministrationLinkId(req.params.id, function (err, doodle) {
+                    if (err) {
+                        req.flash('message', 'An error occured : ' + err);
+                    }
+
+                    req.session.admin_link_id = req.params.id;
+
+                    res.render('public-doodle', {
+                        doodle : doodle,
+                        admin : admin,
+                        message : req.flash('message')
+                    });
+                });
+            }
+            else {
+                // We get informations about the doodle from its id
+                Doodle.getAllInformations(req.params.id, function (err, doodle) {
+                    if (err) {
+                        req.flash('message', 'An error occured : ' + err);
+                    }
+
+                    res.render('public-doodle', {
+                        doodle : doodle,
+                        admin : admin,
+                        message : req.flash('message')
+                    });
+                });
+            }
         });
     });
 
-    // Show the public doodle for admin
-    app.get('/admin-public-doodle', function (req, res) {
-        // To Do
-    });
+
 
     // =====================================
     // ADD PUBLIC USER =====================
@@ -504,7 +587,7 @@ module.exports = function (app, passport) {
         User.newPublicUser(req.body, function (err, user_id) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
-                res.redirect('/public-doodle/' + req.params.id);
+                res.redirect('/public-doodle/' + req.params.admin_id);
             }
             else {
 
@@ -522,6 +605,51 @@ module.exports = function (app, passport) {
             }
         });
     });
+
+
+
+    // =====================================
+    // REMOVE PUBLIC USER ==================
+    // =====================================
+    // Show remove public user form
+    app.get('/public-doodle/:doodle_id/remove-public-user', function (req, res) {
+
+        Doodle.getUsers(req.params.doodle_id, function (err, users) {
+            if (err) {
+                req.flash('An error occured : ' + err);
+                res.redirect('/public-doodle/' + req.params.admin_link_id);
+            }
+            else {
+
+                res.render('remove-public-user', {
+                    users : users
+                })                
+            }
+        });
+    });
+
+    // Process remove public user form
+    app.post('/public-doodle/:doodle_id/remove-public-user', function (req, res) {
+
+        var id = req.params.doodle_id;
+        var user_id = req.body.user;
+        var admin_link_id = req.session.admin_link_id;
+
+        req.session.admin_link_id = null;
+
+        Doodle.removeUserFromPublicDoodle(id, user_id, function (err, result) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+            }
+            else {
+                req.flash('message', 'User deleted !');
+            }
+
+            res.redirect('/public-doodle/' + admin_link_id );
+        });
+
+    });
+
 
     // =====================================
     // ADD PUBLIC VOTE =====================
@@ -550,7 +678,7 @@ module.exports = function (app, passport) {
 
         Doodle.saveVotes(id, user_id, req.body.schedules, function (err, result) {
             if (err) {
-                req.flash('message', 'An error occured : ' +err);
+                req.flash('message', 'An error occured : ' + err);
             }
             else {
                 req.flash('message', 'User created !');
@@ -560,7 +688,6 @@ module.exports = function (app, passport) {
             res.redirect('/public-doodle/' + id);
         });
     });
-
 
 
     // =====================================

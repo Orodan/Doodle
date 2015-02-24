@@ -30,8 +30,6 @@ doodle.newPublic = function (data, callback) {
 			return callback(null, data.rows[0]);
 		});
 	});
-
-
 }
 
 /**
@@ -52,7 +50,7 @@ doodle.new = function (data, user_id, callback) {
 
 		// Add the user to the doodle with the statut of admin ( Table users_by_doodle )
 		var user_statut = 'admin';
-		query = 'INSERT INTO Doodle.users_by_doodle (doodle_id, user_id, statut) values (?, ?, ?)';
+		query = 'INSERT INTO Doodle.users_by_doodle (doodle_id, user_id, admin_statut) values (?, ?, ?)';
 		doodle.db.execute(query, [ id, user_id, user_statut ], { prepare : true }, function (err, result) {
 			if (err) {
 				return callback(err);
@@ -85,17 +83,110 @@ doodle.new = function (data, user_id, callback) {
 // GETTERS =================================================================
 
 /**
+*	Get users from the administration_link_id of the doodle
+**/
+doodle.getUsersFromAdminLinkId = function (admin_link_id, callback) {
+
+	doodle.getDoodleIdFromAdminLinkId (admin_link_id, function (err, doodle_id) {
+		if (err) {
+			return callback(err);
+		}
+
+		doodle.getUsers(doodle_id, function (err, users) {
+			if (err) {
+				return callback(err);
+			}
+
+			return callback(null, users);
+		});
+	});
+}
+
+/**
+*	Get all the informations about the doodle from its administration link id associated
+**/
+doodle.getAllInformationsFromAdministrationLinkId = function (admin_link_id, callback) {
+
+	// We get the doodle id from the administration link id
+	doodle.getDoodleIdFromAdminLinkId(admin_link_id, function (err, doodle_id) {
+		if (err) {
+			return callback(err);
+		}
+
+		// We get the informations about the doodle
+		doodle.getAllInformations(doodle_id, function (err, data) {
+			if (err) {
+				return callback(err);
+			}
+
+			return callback(null, data);
+		})
+	})
+}
+
+/**
+*	Check if the id is an administration id or a doodle id
+**/
+doodle.checkAdminLinkId = function (link_id, callback) {
+
+	var query = 'SELECT * FROM Doodle.doodle_by_admin_link_id WHERE admin_link_id = ?';
+	doodle.db.execute(query, [ link_id ], { prepare : true }, function (err, data) {
+		if (err) {
+			return callback(err);
+		}
+
+		// We have found data, link_id was the administration_link_id
+		if ( data.rows.length > 0 ) {
+			return callback(null, true);
+		}
+		else {
+			// We check if this link_id is a doodle_id
+			doodle.get(link_id, function (err, data) {
+				if (err) {
+					return callback(err);
+				}
+
+				// The link_id is a doodle_id
+				if (data) {
+					return callback(null, false);
+				}
+				// The link_id is not an administration id neither a doodle_id -> error
+				else {
+					return callback('The id is not an administration id, neither a doodle id', null);
+				}
+			});
+		}
+	});
+}
+
+/**
+*	Get the doodle_id associated with the admin_link_ik
+**/
+doodle.getDoodleIdFromAdminLinkId = function (link_id, callback) {
+
+	var query = 'SELECT doodle_id FROM Doodle.doodle_by_admin_link_id WHERE admin_link_id = ?';
+	doodle.db.execute(query, [ link_id ], { prepare : true }, function (err, data) {
+		if (err) {
+			return callback(err);
+		}
+
+		var doodle_id = data.rows[0].doodle_id;
+		return callback(null, doodle_id);
+	});
+}
+
+/**
 *	Get the statut of the user about the doodle
 **/
 doodle.getUserAccess = function (id, user_id, callback) {
 
-	var query = 'SELECT statut FROM Doodle.users_by_doodle WHERE doodle_id = ? AND user_id = ?';
+	var query = 'SELECT admin_statut FROM Doodle.users_by_doodle WHERE doodle_id = ? AND user_id = ?';
 	doodle.db.execute(query, [ id, user_id], { prepare : true }, function (err, data) {
 		if (err) {
 			return callback(err);
 		}
 
-		return callback(null, data.rows[0].statut);
+		return callback(null, data.rows[0].admin_statut);
 	});
 }
 
@@ -458,18 +549,23 @@ doodle.checkUserAccess = function (id, user_id, callback) {
 // SETTERS =================================================================
 
 /**
-*	Associate a admin link to the doodle
+*	Generate access links for user and administrater for the doodle
 *	( Table doodles_by_admin)
 **/
-doodle.addDoodleAdminLink = function (id, admin_link, callback) {
+doodle.generateLinks = function (id, callback) {
 
-	var query = 'INSERT INTO Doodle.doodle_by_admin_link (admin_link, doodle_id) values (?, ?)';
-	doodle.db.execute(query, [ admin_link, id ], { prepare : true }, function (err, result) {
+	var admin_link_id = uuid.v4();
+	var query = 'INSERT INTO Doodle.doodle_by_admin_link_id (admin_link_id, doodle_id) values (?, ?)';
+	doodle.db.execute(query, [ admin_link_id, id ], { prepare : true }, function (err, result) {
 		if (err) {
 			return callback(err);
 		}
 
-		return callback(null, true);
+		var data = {};
+		data.admin_link_id = admin_link_id;
+		data.user_link_id = id;
+
+		return callback(null, data);
 	});
 
 }
@@ -757,6 +853,72 @@ doodle.addDoodleToUser = function (user_id, doodle_id, callback) {
 	});
 }
 
+
+/**
+*	Delete a public doodle
+**/
+doodle.deletePublicDoodle = function (id, admin_link_id, callback) {
+
+	// We delete every user associated with the doodle
+	doodle.deleteUsersFromDoodle(id, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		// We delete the administration link id associated with the doodle
+		doodle.deleteLinkId(admin_link_id, function (err, result) {
+			if (err) {
+				return callback(err);
+			}
+
+			// We delete the doodle
+			doodle.delete(id, function (err, result) {
+				if (err) {
+					return callback(err);
+				}
+
+				return callback(null, true);
+			});
+		});
+	});
+}
+
+/**
+*	Delete the association doodle - admin_link_id
+**/
+doodle.deleteLinkId = function (admin_link_id, callback) {
+
+	var query = 'DELETE FROM Doodle.doodle_by_admin_link_id WHERE admin_link_id = ?';
+	doodle.db.execute(query, [ admin_link_id ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, true);
+	});
+}
+
+/**
+*	Delete every user associted with the doodle
+**/
+doodle.deleteUsersFromDoodle = function (id, callback) {
+
+	// We get the user ids associated with the doodle
+	doodle.getUsersIds(id, function (err, user_ids) {
+		if (err) {
+			return callback(err);
+		}
+
+		doodle.__processDeleteUsersFromDoodle(user_ids, 0, function (err, result) {
+			if (err) {
+				return callback(err);
+			}
+
+			return callback(null, true);
+		});
+	});
+}
+
 /**
 *	Delete all the votes of the doodle
 **/
@@ -852,12 +1014,52 @@ doodle.deleteVoteOnUserFromSchedule = function (id, schedule_id, user_ids, callb
 }
 
 /**
+*	Remove a user from a public doodle = delete the user
+**/
+doodle.removeUserFromPublicDoodle = function (id, user_id, callback) {
+
+	// We delete the user
+	var query = 'DELETE FROM Doodle.user WHERE id = ?';
+	doodle.db.execute(query, [ user_id ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		// We delete all of his associations with doodle and votes
+		// We remove the association doodle-user
+		var query = 'DELETE FROM Doodle.doodles_by_user WHERE user_id = ? AND doodle_id = ?';
+		doodle.db.execute(query, [ user_id, id ], { prepare : true }, function (err, result) {
+			if (err) {
+				return callback(err);
+			}
+
+			// We remove the association user-doodle
+			query = 'DELETE FROM Doodle.users_by_doodle WHERE doodle_id = ? AND user_id = ?';
+			doodle.db.execute(query, [ id, user_id ], { prepare : true }, function (err, result) {
+				if (err) {
+					return callback(err);
+				}
+
+				// We delete every vote associated with the user on the doodle
+				doodle.deleteVotesFromUser(id, user_id, function (err, result) {
+					if (err) {
+						return callback(err);
+					}
+
+					return callback(null, true);	
+				});
+			});
+		});
+	});
+}
+
+/**
 *	Remove an user from a doodle
 *
 **/
 doodle.removeUserFromDoodle = function (id, user_id, callback) {
 
-	// We remove the assiocation doodle-user
+	// We remove the association doodle-user
 	var query = 'DELETE FROM Doodle.doodles_by_user WHERE user_id = ? AND doodle_id = ?';
 	doodle.db.execute(query, [ user_id, id ], { prepare : true }, function (err, result) {
 		if (err) {
@@ -1127,13 +1329,13 @@ doodle._processGetDoodlesFromIds = function (user_id, doodle_ids, doodles, key, 
 			var doodle_data = data.rows[0];
 
 			// We get the statut of the user about the doodle
-			query = 'SELECT statut FROM Doodle.users_by_doodle WHERE doodle_id = ? AND user_id = ?';
+			query = 'SELECT admin_statut FROM Doodle.users_by_doodle WHERE doodle_id = ? AND user_id = ?';
 			doodle.db.execute(query, [ doodle_id, user_id ], { prepare : true }, function (err, user_data) {
 				if (err) {
 					return callback(err);
 				}
 
-				doodle_data.user_statut = user_data.rows[0].statut;
+				doodle_data.user_statut = user_data.rows[0].admin_statut;
 
 				doodles.push(doodle_data);
 				key++;
@@ -1419,14 +1621,23 @@ doodle.__processSaveVotes = function (id, user_id, schedules, key, callback) {
 		var schedule_id = schedules[key].id;
 		var vote = schedules[key].vote;
 
+		// Saving vote in ( Table votes_by_user )
 		var query = 'INSERT INTO Doodle.votes_by_user (doodle_id, user_id, schedule_id, vote) values (?, ?, ?, ?)';
 		doodle.db.execute(query, [ id, user_id, schedule_id, Number(vote) ], { prepare : true }, function (err, result) {
 			if (err) {
 				return callback(err);
 			}
 
-			key++;
-			doodle.__processSaveVotes(id, user_id, schedules, key, callback);
+			// Saving vote in ( Table votes_by_schedule )
+			query = 'INSERT INTO Doodle.votes_by_schedule (doodle_id, schedule_id, user_id, vote) values (?, ?, ?, ?)';
+			doodle.db.execute(query, [ id, schedule_id, user_id, Number(vote) ], { prepare : true }, function (err, result) {
+				if (err) {
+					return callback(err);
+				}
+
+				key++;
+				doodle.__processSaveVotes(id, user_id, schedules, key, callback);
+			})
 		});
 	}
 	else {
@@ -1435,4 +1646,26 @@ doodle.__processSaveVotes = function (id, user_id, schedules, key, callback) {
 
 }
 
+/**
+*	Recursive function to delete several users from an array of user_ids
+**/
+doodle.__processDeleteUsersFromDoodle = function (user_ids, key, callback) {
+
+	if (user_ids.length != key) {
+
+		var user_id = user_ids[key];
+		var query = 'DELETE FROM Doodle.user WHERE id = ?';
+		doodle.db.execute(query, [ user_id ], { prepare : true }, function (err, result) {
+			if (err) {
+				return callback(err);
+			}
+
+			key++;
+			doodle.__processDeleteUsersFromDoodle(user_ids, key, callback);
+		});
+	}
+	else {
+		return callback(null, true);
+	}
+}
 
