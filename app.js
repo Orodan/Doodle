@@ -10,6 +10,8 @@ var cassandra = require('cassandra-driver');
 var passport = require('passport');
 var flash = require('connect-flash');
 
+var basicAuth = require('basic-auth-connect');
+
 // configuration ===============================================================
 
 // Database
@@ -49,8 +51,17 @@ app.use(passport.initialize());
 app.use(passport.session());	// persistent login sessions
 app.use(flash());				// flash messages stored in session
 
+// basic authentication configuration
+var auth = basicAuth(function (email, password, callback) {
+	var result = ( email === 'test@gmail.com' && password === 'test');
+	return callback(null, result);
+});
+
 // routes ======================================================================
-require('./app/routes.js')(app, passport);	// load our routes and pass in our app and our fully configured passport
+require('./app/routes.js')(app, passport);	
+
+// API =========================================================================
+require('./app/api.js')(app, auth);
 
 // launch ======================================================================
 app.listen(3000);

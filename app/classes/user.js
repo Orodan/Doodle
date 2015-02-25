@@ -25,8 +25,8 @@ user.newPublicUser = function (params , callback) {
 /**
 * Check if valid password
 **/
-user.validPassword = function (password) {
-	return false;
+user.validPassword = function (password, user_password) {
+	return bcrypt.compareSync(password, user_password);
 };
 
 /**

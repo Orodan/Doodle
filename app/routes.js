@@ -6,8 +6,6 @@ var uuid = require('node-uuid');
 
 module.exports = function (app, passport) {
 
-
-
 	// =====================================
     // HOME PAGE ===========================
     // =====================================
