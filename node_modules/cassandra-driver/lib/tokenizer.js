@@ -6,15 +6,28 @@ var utils = require('./utils.js');
 var errors = require('./errors.js');
 var Long = types.Long;
 
-//TODO: See decide hash return value (Buffer or hex string)
+/**
+ * Represents a set of methods that are able to generate and parse tokens for the C* partitioner
+ * @constructor
+ */
 function Tokenizer() {
 
 }
 
+//noinspection JSUnusedLocalSymbols
+/**
+ * Creates a token based on the Buffer value provided
+ * @param {Buffer|Array} value
+ */
 Tokenizer.prototype.hash = function (value) {
   throw new Error('You must implement a hash function for the tokenizer');
 };
 
+//noinspection JSUnusedLocalSymbols
+/**
+ * Parses a token string and returns a representation of the token
+ * @param {String} value
+ */
 Tokenizer.prototype.parse = function (value) {
   throw new Error('You must implement a parse function for the tokenizer');
 };
@@ -83,7 +96,7 @@ Murmur3Tokenizer.prototype.hash = function (value) {
     h1 = h1.xor(k1);
     h1 = this.rotl64(h1, 27);
     h1 = h1.add(h2);
-    h1 = h1.multiply(5).add(Long.fromNumber(0x52dce729));
+    h1 = h1.multiply(Long.fromNumber(5)).add(Long.fromNumber(0x52dce729));
 
     k2 = k2.multiply(c2);
     k2 = this.rotl64(k2, 33);
@@ -91,7 +104,7 @@ Murmur3Tokenizer.prototype.hash = function (value) {
     h2 = h2.xor(k2);
     h2 = this.rotl64(h2, 31);
     h2 = h2.add(h1);
-    h2 = h2.multiply(5).add(Long.fromNumber(0x38495ab5));
+    h2 = h2.multiply(Long.fromNumber(5)).add(Long.fromNumber(0x38495ab5));
   }
   //----------
   // tail
@@ -220,16 +233,23 @@ function RandomTokenizer() {
 
 util.inherits(RandomTokenizer, Tokenizer);
 
-
 /**
  * @param {Buffer|Array} value
- * @returns {Buffer}
+ * @returns {String}
  */
 RandomTokenizer.prototype.hash = function (value) {
   if (util.isArray(value)) {
     value = new Buffer(value);
   }
-  return this._crypto.createHash('md5').update(value).digest();
+  var hashedValue = this._crypto.createHash('md5').update(value).digest();
+  return hashedValue.toString('hex');
+};
+
+/**
+ * @returns {String}
+ */
+RandomTokenizer.prototype.parse = function (value) {
+  return value;
 };
 
 function ByteOrderedTokenizer() {
@@ -253,10 +273,6 @@ ByteOrderedTokenizer.prototype.stringify = function (value) {
 ByteOrderedTokenizer.prototype.parse = function (value) {
   return new Buffer(value);
 };
-
-//ByteOrderedTokenizer.prototype.compare = function (val1, val2) {
-//  return Tokenizer.prototype.compare(val1, val2);
-//};
 
 exports.Murmur3Tokenizer = Murmur3Tokenizer;
 exports.RandomTokenizer = RandomTokenizer;

@@ -22,7 +22,8 @@ function defaultOptions () {
       prepare: false
     },
     protocolOptions: {
-      port: 9042
+      port: 9042,
+      maxSchemaAgreementWaitSeconds: 10
     },
     pooling: {
       coreConnectionsPerHost: {
@@ -33,7 +34,9 @@ function defaultOptions () {
       maxConnectionsPerHost: {}
     },
     socketOptions: {
-      connectTimeout: 5000
+      connectTimeout: 5000,
+      keepAlive: true,
+      keepAliveDelay: 0
     },
     authProvider: null,
     maxPrepared: 500

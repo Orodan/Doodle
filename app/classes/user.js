@@ -6,6 +6,30 @@ var uuid = require('node-uuid');
 var user = {};
 
 /**
+*	Basic authentication of user
+**/
+user.basicAuthentication = function (email, password, callback) {
+
+	// We check if there is an user with this email
+	user.findByEmail(email, function (err, user_data) {
+		if (err) {
+			return callback(err);
+		}
+
+		if (!user_data) {
+			return callback('No user found with the email ' + email, false);
+		}
+
+		if (!user.validPassword(password, user_data.password) ) {
+			return callback('Wrong password', false);
+		}
+
+		return callback(null, user_data);
+	});
+
+};
+
+/**
 *	Create a new public user
 **/
 user.newPublicUser = function (params , callback) {

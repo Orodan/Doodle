@@ -147,7 +147,7 @@ HostConnectionPool.prototype.borrowConnection = function (callback) {
 HostConnectionPool.prototype._maybeCreatePool = function (callback) {
   //The parameter this.coreConnectionsLength could change over time
   //It can result of a created pool being resized (setting the distance).
-  if (this.connections && this.connections.length >= this.coreConnectionsLength) {
+  if (!this.creating && this.connections && this.connections.length >= this.coreConnectionsLength) {
     return callback();
   }
   this.once('creation', callback);
@@ -204,7 +204,9 @@ HostConnectionPool.prototype.shutdown = function (callback) {
     c.close(next);
   }, function (err) {
     self.connections = null;
+    self.shuttingDown = false;
     callback(err);
+    self.emit('shutdown', err);
   });
 };
 
