@@ -11,13 +11,40 @@ module.exports = function (app) {
 
 
 	// =====================================
-    // DOODLE PRIVÉ ========================
+    // SIGN UP =============================
     // =====================================
 
+    // Registred a new user
+    app.post('/api/user', function (req, res) {
+
+    	User.create(req.body, 'registred', function (err, user) {
+    		var response = {};
+
+    		if (err) {
+    			response.type = 'error';
+    			response.message = 'An error occured : ' + err;
+    		}
+    		else {
+    			response.type = 'success';
+    			response.message = 'User created';
+    		}
+
+    		response.user = user;
+    		return res.send(response);
+
+    	});
+
+    });
+
+
+	// =====================================
+    // PRIVATE DOODLE ======================
+    // =====================================
+
+    // Create a private doodle
     app.post('/api/doodle', basicAuth, function (req, res) {
 
     	Doodle.new(req.body, req.headers.id, function (err, doodle) {
-
  			var response = {};
 
     		if (err) {

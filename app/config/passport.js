@@ -47,21 +47,20 @@ module.exports = function (passport) {
     		}
     		else {
 
-    			var newUser = {
-                    "id" : Uuid.v4(),
+    			var user = {
     				"email" : email,
-    				"password" : Global.generateHash(password),
+    				"password" : password,
                     "first_name" : req.body.first_name,
                     "last_name" : req.body.last_name
     			};
 
-    			User.create(newUser, 'registred', function (err) {
+    			User.create(user, 'registred', function (err, new_user) {
 
                     if (err) {
                         return done(err);
                     }
 
-                    return done(null, newUser);
+                    return done(null, new_user);
     			});
 
     		}

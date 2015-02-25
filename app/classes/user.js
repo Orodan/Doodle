@@ -1,6 +1,7 @@
 // Dependencies =====================================================
 var bcrypt = require('bcrypt-nodejs');
 var uuid = require('node-uuid');
+var Global = require('../classes/global');
 
 // User Model to interact with database
 var user = {};
@@ -84,37 +85,36 @@ user.findById = function (id, callback) {
 */
 user.create = function (newUser, statut, callback) {
 
+	var user_id = uuid.v4();
+
 	var query = "INSERT INTO Doodle.user (id, email, password, first_name, last_name, statut) values (?, ?, ?, ?, ?, ?)";
 
-	user.db.execute(query, [ newUser.id, newUser.email, newUser.password, newUser.first_name, newUser.last_name, statut ], { prepare : true},
-		function (err) {
-			(err) ? callback(err) : callback(null);
+	user.db.execute(query, [ user_id, newUser.email, Global.generateHash(newUser.password), newUser.first_name, newUser.last_name, statut ], { prepare : true},
+		function (err, result) {
+			if (err) {
+				return callback(err);
+			}
+			else {
+				user.get(user_id, function (err, user_data) {
+					if (err) {
+						return callback(err);
+					}
+
+					return callback(null, user_data);
+				});
+			}
 		}
 	);
 };
 
 /**
-*	Associate an user email with an password
-*/
-user.createAuthentication = function (email, password, user_uuid, callback) {
-
-		var	query = "INSERT INTO Doodle.user (email, password, user_uuid) values(?, ?, ?)";
-
-		user.db.execute(query, [ email, password, user_uuid ], 
-		{ prepare : true },
-		function (err, result) {
-			(err) ? callback(err) : callback(null, true);
-		});	
-};
-
-/**
 *	Get user data
 */
-user.get = function (user_uuid, callback) {
+user.get = function (id, callback) {
 
-	var query = "SELECT * FROM Doodle.user WHERE user_uuid = ?";
+	var query = "SELECT * FROM Doodle.user WHERE id = ?";
 
-	user.db.execute(query, [ user_uuid ], { prepare : true },
+	user.db.execute(query, [ id ], { prepare : true },
 		function (err, result) {
 			(err) ? callback(err) : callback(null, result.rows[0]);
 		});
