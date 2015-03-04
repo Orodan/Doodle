@@ -30,7 +30,7 @@ doodle.newPublic = function (data, callback) {
 			return callback(null, data.rows[0]);
 		});
 	});
-}
+};
 
 /**
 *	Create a new private doodle from the data
@@ -75,12 +75,32 @@ doodle.new = function (data, user_id, callback) {
 				});
 
 			});
-		})
-
+		});
 	});
-}
+};
 
 // GETTERS =================================================================
+
+/**
+*	Check if the doodle has still somes users left
+**/
+doodle.checkUsers = function (doodle_id, callback) {
+
+	var query = 'SELECT * FROM Doodle.users_by_doodle WHERE doodle_id = ?';
+	doodle.db.execute(query, [ doodle_id ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		// Still has some users
+		if (result.rows.length > 0) {
+			return callback(null, true);
+		}
+		else {
+			return callback(null, false);
+		}
+	});
+};
 
 /**
 *	Get users from the administration_link_id of the doodle
@@ -100,7 +120,7 @@ doodle.getUsersFromAdminLinkId = function (admin_link_id, callback) {
 			return callback(null, users);
 		});
 	});
-}
+};
 
 /**
 *	Get all the informations about the doodle from its administration link id associated
@@ -120,9 +140,9 @@ doodle.getAllInformationsFromAdministrationLinkId = function (admin_link_id, cal
 			}
 
 			return callback(null, data);
-		})
-	})
-}
+		});
+	});
+};
 
 /**
 *	Check if the id is an administration id or a doodle id
@@ -157,7 +177,7 @@ doodle.checkAdminLinkId = function (link_id, callback) {
 			});
 		}
 	});
-}
+};
 
 /**
 *	Get the doodle_id associated with the admin_link_ik
@@ -173,7 +193,7 @@ doodle.getDoodleIdFromAdminLinkId = function (link_id, callback) {
 		var doodle_id = data.rows[0].doodle_id;
 		return callback(null, doodle_id);
 	});
-}
+};
 
 /**
 *	Get the statut of the user about the doodle
@@ -188,7 +208,7 @@ doodle.getUserAccess = function (id, user_id, callback) {
 
 		return callback(null, data.rows[0].admin_statut);
 	});
-}
+};
 
 /**
 *	Get the schedule ids assocatied with the doodle
@@ -209,7 +229,7 @@ doodle.getScheduleIds = function (id, callback) {
 
 		return callback(null, schedule_ids);
 	});
-}
+};
 
 /**
 *	Get all the schedule_ids associated the user on the doodle
@@ -230,7 +250,7 @@ doodle.getScheduleIdsFromUser = function (id, user_id, callback) {
 
 		return callback(null, schedule_ids);
 	});
-}
+};
 
 /**
 *	Get all the votes of an user about a doodle
@@ -246,7 +266,7 @@ doodle.getVotesFromUser = function (id, user_id, callback) {
 		var user_votes = data.rows;
 		return callback(null, user_votes);
 	});
-}
+};
 
 /**
 *	Get all informations about a doodle
@@ -257,11 +277,15 @@ doodle.getAllInformations = function (id, callback) {
 	var doodle_data = {};
 	doodle_data.id = id;
 
+	
+
 	// Get the schedules
 	doodle.getSchedules(id, function (err, schedules) {
 		if (err) {
 			return callback(err);
 		}
+
+		
 
 		doodle_data.schedules = schedules;
 
@@ -271,24 +295,30 @@ doodle.getAllInformations = function (id, callback) {
 				return callback(err);
 			}
 
+			
+
 			doodle_data.users = users;
 
 			return callback(null, doodle_data);
 			
 		});
 	});
-}
+};
 
 /**
 *	Get all the users of a doodle with theirs votes
 **/
 doodle.getUsersWithVotes = function (id, callback) {
 
+	
+
 	// We get the user ids
 	doodle.getUsersIds(id, function (err, user_ids) {
 		if (err) {
 			return callback(err);
 		}
+
+		
 
 		// We get the users with theirs votes
 		doodle.getUsersFromIdsWithVotes(id, user_ids, function (err, users) {
@@ -299,7 +329,7 @@ doodle.getUsersWithVotes = function (id, callback) {
 			return callback(null, users);
 		});
 	});
-}
+};
 
 /**
 *	Get the users with theirs votes from an array of ids
@@ -308,6 +338,8 @@ doodle.getUsersFromIdsWithVotes = function (id, user_ids, callback) {
 
 	var users = [];
 
+	// ERREUR ICI
+
 	doodle._processGetUsersFromIdsWithVotes(id, user_ids, users, 0, function (err, users) {
 		if (err) {
 			return callback(err);
@@ -315,7 +347,7 @@ doodle.getUsersFromIdsWithVotes = function (id, user_ids, callback) {
 
 		return callback(null, users);
 	});
-}
+};
 
 /**
 *	Get all the users of a doodle
@@ -336,7 +368,7 @@ doodle.getUsers = function (id, callback) {
 		});
 
 	});
-}
+};
 
 /**
 *	Get the informations of the users from an array of ids
@@ -352,7 +384,7 @@ doodle.getUsersFromIds = function (user_ids, callback) {
 
 		return callback(null, users);
 	});
-}
+};
 
 /**
 *	Get all the schedules associated with the doodle
@@ -378,9 +410,9 @@ doodle.getSchedules = function (id, callback) {
 			}
 
 			return callback(null, schedules);
-		})
+		});
 	});
-}
+};
 
 /**
 *	Get all the schedules from an array of ids
@@ -396,8 +428,7 @@ doodle.getSchedulesFromIds = function (schedule_ids, callback) {
 
 		return callback(null, schedules);
 	});
-
-}
+};
 
 /**
 *	Get basic informations of a doodle
@@ -413,7 +444,7 @@ doodle.get = function (id, callback) {
 		var doodle_data = data.rows[0];
 		return callback(null, doodle_data);
 	});
-}
+};
 
 /**
 *	Get every user ids associated with the doodle
@@ -433,8 +464,8 @@ doodle.getUsersIds = function (id, callback) {
 		}
 
 		return callback(null, user_ids);
-	})
-}
+	});
+};
 
 /**
 *	Get all doodles from their ids and send it back in a array
@@ -449,12 +480,12 @@ doodle.getDoodlesFromIds = function (user_id, doodle_ids, callback) {
 
 		return callback(null, doodles);
 	});
-}
+};
 
 /**
 *	Get the base informations about all doodles of the user
 **/
-doodle.getDoodleFromUser = function (user_id, callback) {
+doodle.getDoodlesFromUser = function (user_id, callback) {
 
 	var query = 'SELECT doodle_id FROM Doodle.doodles_by_user WHERE user_id = ?';
 
@@ -480,7 +511,7 @@ doodle.getDoodleFromUser = function (user_id, callback) {
 			return callback(null, doodles);
 		});
 	});
-}
+};
 
 /**
 *	Check if the user is already associated with the doodle
@@ -502,7 +533,7 @@ doodle.checkUserAlreadyAssociated = function (id, user_id, callback) {
 			return callback(null, false);	
 		}
 	});
-}
+};
 
 /**
 *	Check with the email if the user is registred
@@ -523,7 +554,7 @@ doodle.checkUserByEmail = function (email, callback) {
 			return callback(null, false);
 		}
 	});	
-}
+};
 
 /**
 *	Check if the user has access to the doodle
@@ -544,7 +575,7 @@ doodle.checkUserAccess = function (id, user_id, callback) {
 			return callback(null, false);
 		}
 	});
-}
+};
 
 // SETTERS =================================================================
 
@@ -567,8 +598,7 @@ doodle.generateLinks = function (id, callback) {
 
 		return callback(null, data);
 	});
-
-}
+};
 
 /**
 *	Save several votes associated with the doodle, the user and the schedules
@@ -582,7 +612,7 @@ doodle.saveVotes = function (doodle_id, user_id, params, callback) {
 
 		return callback(null, true);
 	});
-}
+};
 
 /**
 *	Save a vote associated with the doodle, the user and the schedule 
@@ -609,7 +639,7 @@ doodle.saveVote = function (doodle_id, user_id, params, callback) {
 			return callback(null, true);
 		});
 	});
-}
+};
 
 /**
 *	Save many schedules to the doodle
@@ -623,7 +653,7 @@ doodle.addSchedules = function (id, params, callback) {
 
 		return callback(null, true);
 	});
-}
+};
 
 /**
 *	Add a new schedule to the doodle
@@ -657,7 +687,7 @@ doodle.addSchedule = function (id, params, callback) {
 		});
 
 	});
-}
+};
 
 /**
 *	Create a new vote concerning the schedule for each user of the doodle
@@ -678,8 +708,8 @@ doodle.addDefaultVoteToUsers = function (id, schedule_id, callback) {
 
 			return callback(null, true);
 		});
-	})
-}
+	});
+};
 
 /**
 *	Create a new schedule
@@ -694,7 +724,7 @@ doodle.createSchedule = function (id, begin_date, end_date, callback) {
 
 		return callback(null, true);
 	});
-}
+};
 
 /**
 *	Associate a schedule to a doodle
@@ -709,7 +739,7 @@ doodle.associateScheduleToDoodle = function (doodle_id, schedule_id, callback) {
 
 		return callback(null, true);
 	});
-}
+};
 
 /**
 *	Associate a public user to a doodle
@@ -727,9 +757,9 @@ doodle.addPublicUser = function(id, user_id, callback) {
 			}
 
 			return callback(null, true);
-		})
+		});
 	});
-}
+};
 
 /**
 *	Associate an user to a doodle
@@ -797,7 +827,7 @@ doodle.addUser = function (id, params, callback) {
 			return callback('The user you tried to add is not registred');
 		}
 	});
-}
+};
 
 /**
 *	Add for each schedules of the doodle new undecied votes to the user 
@@ -817,9 +847,9 @@ doodle.addDefaultVotesToUser = function (id, user_id, callback) {
 			}
 
 			return callback(null, true);
-		})
-	})
-}
+		});
+	});
+};
 
 /**
 *	Create the association doodle-user
@@ -835,7 +865,7 @@ doodle.addUserToDoodle = function (doodle_id, user_id, callback) {
 
 		return callback(null, true);
 	});
-}
+};
 
 /**
 *	Create the association user-doodle
@@ -851,7 +881,7 @@ doodle.addDoodleToUser = function (user_id, doodle_id, callback) {
 
 		return callback(null, true);
 	});
-}
+};
 
 
 /**
@@ -881,7 +911,7 @@ doodle.deletePublicDoodle = function (id, admin_link_id, callback) {
 			});
 		});
 	});
-}
+};
 
 /**
 *	Delete the association doodle - admin_link_id
@@ -896,7 +926,7 @@ doodle.deleteLinkId = function (admin_link_id, callback) {
 
 		return callback(null, true);
 	});
-}
+};
 
 /**
 *	Delete every user associted with the doodle
@@ -917,7 +947,7 @@ doodle.deleteUsersFromDoodle = function (id, callback) {
 			return callback(null, true);
 		});
 	});
-}
+};
 
 /**
 *	Delete all the votes of the doodle
@@ -941,7 +971,7 @@ doodle.deleteVotes = function (id, callback) {
 			return callback(null, true);
 		});
 	});
-}
+};
 
 /**
 *	Delete a schedule
@@ -969,10 +999,10 @@ doodle.deleteSchedule = function (id, schedule_id, callback) {
 				}
 
 				return callback(null, true);
-			}) 
+			});
 		});
 	});
-}
+};
 
 /**
 *	Delete all the votes associated with the schedule in the doodle
@@ -1003,7 +1033,7 @@ doodle.deleteVotesOfSchedule = function (id, schedule_id, callback) {
 			});
 		});
 	});
-}
+};
 
 /**
 *	Delete the vote associated with the schedule for every user on the doodle
@@ -1011,7 +1041,7 @@ doodle.deleteVotesOfSchedule = function (id, schedule_id, callback) {
 doodle.deleteVoteOnUserFromSchedule = function (id, schedule_id, user_ids, callback) {
 
 	doodle.__processDeleteVoteOnUserFromSchedule(id, schedule_id, user_ids, 0, callback);
-}
+};
 
 /**
 *	Remove a user from a public doodle = delete the user
@@ -1051,7 +1081,7 @@ doodle.removeUserFromPublicDoodle = function (id, user_id, callback) {
 			});
 		});
 	});
-}
+};
 
 /**
 *	Remove an user from a doodle
@@ -1102,7 +1132,7 @@ doodle.removeUserFromDoodle = function (id, user_id, callback) {
 			});
 		});
 	});
-}
+};
 
 /**
 *	Delete on the doodle all the votes associated with the user
@@ -1132,7 +1162,7 @@ doodle.deleteVotesFromUser = function (id, user_id, callback) {
 			});
 		});
 	});
-}
+};
 
 /**
 *	Delete the votes associated with the schedules and the user on that doodle
@@ -1146,7 +1176,7 @@ doodle.deleteVoteFromSchedules = function (id, user_id, schedule_ids, callback) 
 
 		return callback(null, true);
 	});
-}
+};
 
 /**
 *	Remove a doodle
@@ -1196,14 +1226,14 @@ doodle.delete = function (id, callback) {
 								}
 
 								return callback(null, true);
-							})
+							});
 						});
 					});
 				});
 			});
 		});
 	});
-}
+};
 
 /**
 *	Delete every schedules associated with the doodle
@@ -1226,7 +1256,7 @@ doodle.deleteSchedules = function (id, schedule_ids, callback) {
 			return callback(null, true);
 		});
 	});
-}
+};
 
 /**
 *	Delete the schedules from an array of ids
@@ -1234,7 +1264,7 @@ doodle.deleteSchedules = function (id, schedule_ids, callback) {
 doodle.deleteSchedulesFromIds = function (schedule_ids, callback) {
 
 	doodle.__processDeleteSchedulesFromIds(schedule_ids, 0, callback);
-}
+};
 
 /**
 *	Remove a doodle from database
@@ -1248,8 +1278,8 @@ doodle.deleteDoodle = function (id, callback) {
 		}
 
 		return callback(null, true);
-	})
-}
+	});
+};
 
 /**
 *	Remove all the associations user-doodle of a doodle 
@@ -1263,7 +1293,7 @@ doodle.removeDoodleOfUsers = function (user_ids, doodle_id, callback) {
 		}
 
 		return callback(null, true);
-	})
+	});
 };
 
 /**
@@ -1280,8 +1310,8 @@ doodle.removeUsersOfDoodle = function (id, callback) {
 		}
 
 		return callback(null, true);
-	})
-}
+	});
+};
 
 
 // INTERNAL FUNCTIONS ===============================================================
@@ -1308,7 +1338,7 @@ doodle._processRemoveDoodleOfUsers = function (user_ids, doodle_id, key, callbac
 	else {
 		return callback(null, true);
 	}
-}
+};
 
 /**
 *	Recursive function to get all the doodles from an array of ids
@@ -1347,7 +1377,7 @@ doodle._processGetDoodlesFromIds = function (user_id, doodle_ids, doodles, key, 
 	else {
 		return callback(null, doodles);
 	}
-}
+};
 
 /**
 *	Recursive function to get all the schedules from an array of ids
@@ -1374,7 +1404,7 @@ doodle._processGetSchedulesFromIds = function (schedule_ids, schedules, key, cal
 	else {
 		return callback(null, schedules);
 	}
-}
+};
 
 /**
 *	Recursive function to get all the users from an array of ids
@@ -1401,13 +1431,16 @@ doodle._processGetUsersFromIds = function (user_ids, users, key, callback) {
 	else {
 		return callback(null, users);
 	}
-}
+};
 
 /**
 *	Recursive function to get all the users and theirs votes from an array of ids
 *	( Table users and vote )
 **/
 doodle._processGetUsersFromIdsWithVotes = function (id, user_ids, users, key, callback) {
+
+	console.log("user ids");
+	console.log(user_ids);
 
 	if ( user_ids.length != users.length ) {
 
@@ -1422,11 +1455,19 @@ doodle._processGetUsersFromIdsWithVotes = function (id, user_ids, users, key, ca
 
 			var user = user_data.rows[0];
 
+			console.log(user_id);
+
+			console.log("USER");
+			console.log(user);
+
 			// We get the votes of the user
 			doodle.getVotesFromUser(id, user_id, function (err, vote_data) {
 				if (err) {
 					return callback(err);
 				}
+
+				console.log("USER");
+				console.log(user);
 
 				user.votes = vote_data;
 				users.push(user);
@@ -1441,7 +1482,7 @@ doodle._processGetUsersFromIdsWithVotes = function (id, user_ids, users, key, ca
 	else {
 		return callback(null, users);
 	}
-}
+};
 
 /**
 *	Recursive function to create for each schedules a new undecided vote 
@@ -1471,12 +1512,12 @@ doodle.__processAddDefaultVotesToUser = function (id, user_id, schedules, key, c
 				key++;
 				doodle.__processAddDefaultVotesToUser(id, user_id, schedules, key, callback);
 			});
-		})
+		});
 	}
 	else {
 		return callback(null, true);
 	}
-}
+};
 
 /**
 *	Recursive function to create for each user a new undecied vote concerning the schedule
@@ -1511,7 +1552,7 @@ doodle.__processAddDefaultVoteToUsers = function (id, schedule_id, user_ids, key
 	else {
 		return callback(null, true);
 	}
-}
+};
 
 /**
 *	Recursive function to delete the votes associated with the user on the doodle from an array of schedule_ids
@@ -1537,7 +1578,7 @@ doodle.__processDeleteVoteFromSchedules = function (id, user_id, schedule_ids, k
 	else {
 		return callback(null, true);
 	}
-}
+};
 
 /**
 *	Recursive function to delete the vote associated with the schedule on every user on the doodle
@@ -1563,7 +1604,7 @@ doodle.__processDeleteVoteOnUserFromSchedule = function (id, schedule_id, user_i
 	else {
 		return callback(null, true);
 	}
-}
+};
 
 /**
 *	Recursive function to delete all the schedules from an array of ids
@@ -1587,7 +1628,7 @@ doodle.__processDeleteSchedulesFromIds = function (schedule_ids, key, callback) 
 	else {
 		return callback(null, true);
 	}
-}
+};
 
 /**
 *	Recursive function to save several schedules to the doodle
@@ -1609,7 +1650,7 @@ doodle.__processAddSchedules = function (id, schedules, key, callback) {
 	else {
 		return callback(null, true);
 	}
-}
+};
 
 /**
 *	Recursive function to save several votes to the doodle
@@ -1637,14 +1678,13 @@ doodle.__processSaveVotes = function (id, user_id, schedules, key, callback) {
 
 				key++;
 				doodle.__processSaveVotes(id, user_id, schedules, key, callback);
-			})
+			});
 		});
 	}
 	else {
 		return callback(null, true);
 	}
-
-}
+};
 
 /**
 *	Recursive function to delete several users from an array of user_ids
@@ -1667,5 +1707,5 @@ doodle.__processDeleteUsersFromDoodle = function (user_ids, key, callback) {
 	else {
 		return callback(null, true);
 	}
-}
+};
 

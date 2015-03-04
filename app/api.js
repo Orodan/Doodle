@@ -11,7 +11,7 @@ module.exports = function (app) {
 
 
 	// =====================================
-    // SIGN UP =============================
+    // USER ================================
     // =====================================
 
     // Registred a new user
@@ -35,6 +35,27 @@ module.exports = function (app) {
     	});
 
     });
+
+    // Delete a user
+    app.delete('/api/user/:user_id', basicAuth, function (req, res) {
+
+    	User.delete(req.params.user_id, req.headers.id, function (err, result) {
+    		var response = {};
+
+    		if (err) {
+    			response.type = 'error';
+    			response.message = 'An error occured : ' + err;
+    		}
+    		else {
+    			response.type = 'success';
+    			response.message = 'User deleted';
+    		}
+
+    		res.send(response);
+    	});
+
+    });
+
 
 
 	// =====================================

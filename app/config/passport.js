@@ -35,36 +35,26 @@ module.exports = function (passport) {
     },
     function (req, email, password, done) {
 
-    	// First we check if the user trying to sign up already exists
-    	User.getUserByEmail(email, function (err, user) {
-    		if (err) {
-    			return done(err);
-    		}
+    	// Check if the user trying to sign up already exists
+        User.check(email, function (err, find) {
 
-    		// If the user already exists 
-    		if (user) {
-    			return done(null, false, req.flash('signupMessage', 'That email is already taken.'));
-    		}
-    		else {
-
-    			var user = {
-    				"email" : email,
-    				"password" : password,
-                    "first_name" : req.body.first_name,
-                    "last_name" : req.body.last_name
-    			};
-
-    			User.create(user, 'registred', function (err, new_user) {
-
+            // The user already exists, stop
+            if (find) {
+                return done(null, false, req.flash('signupMessage', 'That email is already taken.'));
+            }
+            else {
+                
+                var user = new User(email, req.body.first_name, req.body.last_name, password);
+                user.save(function (err) {
                     if (err) {
                         return done(err);
                     }
 
-                    return done(null, new_user);
-    			});
-
-    		}
-    	});
+                    return done(null, user);
+                });
+                
+            }
+        });
     }));
 
     // =========================================================================
@@ -80,12 +70,7 @@ module.exports = function (passport) {
 
             // If an error happened, stop everything and send it back
             if (err) {
-                return done(err);
-            }
-
-            // If no user is found, return the message
-            if (!user) {
-                return done(null, false, req.flash('loginMessage', 'No user found.'));
+                return done(null, false, req.flash('loginMessage', err));
             }
 
             // If the user is found but the password is wrong
