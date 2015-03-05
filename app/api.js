@@ -1,9 +1,23 @@
 // Dependencies
 var auth = require('basic-auth');
 var User = require('./classes/user');
+var privateUser = require('./classes/privateUser');
 var Doodle = require('./classes/doodle');
+var publicUser = require('./classes/publicUser');
 
 module.exports = function (app) {
+
+    app.post('/api/user', function (req, res) {
+
+        var public_user = new publicUser(req.body.email, req.body.first_name, req.body.last_name, req.body.password);
+        public_user.save(function (err, result) {
+            if (err) {
+                console.log(err);
+            }
+
+            res.send("User created");
+        }); 
+    });
 
 	app.get('/api', basicAuth, function (req, res) {
 		res.send("Hello world !");
@@ -95,7 +109,7 @@ module.exports = function (app) {
 			return res.send('An error occured : no credentials found in request headers for basic authentication');
 		}
 
-		User.basicAuthentication(credentials.name, credentials.pass, function (err, user) {
+		privateUser.basicAuthentication(credentials.name, credentials.pass, function (err, user) {
 			if (err) {
 				return res.send('An error occured : ' + err);
 			}
@@ -104,4 +118,4 @@ module.exports = function (app) {
 			next();
 		});
 	}
-}
+};

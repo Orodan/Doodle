@@ -1439,9 +1439,6 @@ doodle._processGetUsersFromIds = function (user_ids, users, key, callback) {
 **/
 doodle._processGetUsersFromIdsWithVotes = function (id, user_ids, users, key, callback) {
 
-	console.log("user ids");
-	console.log(user_ids);
-
 	if ( user_ids.length != users.length ) {
 
 		var user_id = user_ids[key];
@@ -1455,19 +1452,11 @@ doodle._processGetUsersFromIdsWithVotes = function (id, user_ids, users, key, ca
 
 			var user = user_data.rows[0];
 
-			console.log(user_id);
-
-			console.log("USER");
-			console.log(user);
-
 			// We get the votes of the user
 			doodle.getVotesFromUser(id, user_id, function (err, vote_data) {
 				if (err) {
 					return callback(err);
 				}
-
-				console.log("USER");
-				console.log(user);
 
 				user.votes = vote_data;
 				users.push(user);

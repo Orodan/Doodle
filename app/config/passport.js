@@ -1,5 +1,5 @@
 var LocalStrategy = require('passport-local').Strategy;
-var User = require('../classes/user');
+var privateUser = require('../classes/privateUser');
 var Global = require('../classes/global');
 var Uuid = require('node-uuid');
 
@@ -17,7 +17,7 @@ module.exports = function (passport) {
 	});
 
 	passport.deserializeUser(function (id, done) {
-		User.findById(id, function (err, user) {
+		privateUser.findById(id, function (err, user) {
 			done(err, user);
 		});
 	});
@@ -36,7 +36,7 @@ module.exports = function (passport) {
     function (req, email, password, done) {
 
     	// Check if the user trying to sign up already exists
-        User.check(email, function (err, find) {
+        privateUser.check(email, function (err, find) {
 
             // The user already exists, stop
             if (find) {
@@ -44,7 +44,7 @@ module.exports = function (passport) {
             }
             else {
                 
-                var user = new User(email, req.body.first_name, req.body.last_name, password);
+                var user = new privateUser(email, req.body.first_name, req.body.last_name, password);
                 user.save(function (err) {
                     if (err) {
                         return done(err);
@@ -66,7 +66,7 @@ module.exports = function (passport) {
         passReqToCallback : true    // allow us to pass back the entire request to the callback
     },
     function (req, email, password, done) {
-        User.findByEmail(email, function (err, user) {
+        privateUser.findByEmail(email, function (err, user) {
 
             // If an error happened, stop everything and send it back
             if (err) {
@@ -74,7 +74,7 @@ module.exports = function (passport) {
             }
 
             // If the user is found but the password is wrong
-            if (!User.validPassword(password, user.password)) {
+            if (!privateUser.validPassword(password, user.password)) {
                 return done(null, false, req.flash('loginMessage', 'Oops ! Wrong password.'));
             }
 

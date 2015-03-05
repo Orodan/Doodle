@@ -10,59 +10,28 @@ var async = require('async');
 function user (email, first_name, last_name, password) {
 
 	this.id = uuid.v4();
-	this.email = email;
+	// this.email = email;
 	this.first_name = first_name;
 	this.last_name = last_name;
-	this.password = Global.generateHash(password);
-	this.statut = 'registred';
+	// this.password = Global.generateHash(password);
 
 }
 
+/**
+*	Save user information in databse
+**/
 user.prototype.save = function (callback) {
 
-	var queries = [
-		{
-			query : 'INSERT INTO user (id, email, first_name, last_name, password, statut) values (?, ?, ?, ?, ?, ?)',
-			params : [ this.id, this.email, this.first_name, this.last_name, this.password, this.statut ]
-		},
-		{
-			query : 'INSERT INTO user_by_email (email, user_id) values (?, ?)',
-			params : [ this.email, this.id ]
-		}
-	];
-
-	user.db.batch(queries, { prepare : true }, function (err, result) {
+	var query =  'INSERT INTO user (id, email, first_name, last_name, password, statut) values (?, ?, ?, ?, ?, ?)';
+	user.db.execute(query, [ this.id, this.email, this.first_name, this.last_name, this.password, this.statut ], { prepare : true }, function (err, result) {
 		if (err) {
 			return callback(err);
 		}
 
 		return callback(null, result);
 	});
-
 };
 
-/**
-*	Basic authentication of user
-**/
-user.basicAuthentication = function (email, password, callback) {
-
-	// We check if there is an user with this email
-	user.findByEmail(email, function (err, user_data) {
-		if (err) {
-			return callback(err);
-		}
-
-		if (!user_data) {
-			return callback('No user found with the email ' + email, false);
-		}
-
-		if (!user.validPassword(password, user_data.password) ) {
-			return callback('Wrong password', false);
-		}
-
-		return callback(null, user_data);
-	});
-};
 
 /**
 *	Delete an user
@@ -138,40 +107,6 @@ user.validPassword = function (password, user_password) {
 };
 
 /**
-*	Find user by email
-**/
-user.findByEmail = function (email, callback) {
-
-	async.waterfall([
-		function (callback) {
-
-			var query = 'SELECT user_id FROM user_by_email WHERE email = ?';
-			user.db.execute(query, [ email ], { prepare : true }, function (err, result) {
-				if (err) {
-					return callback(err);
-				}
-
-				if (!result.rows[0]) {
-					return callback('No user with this email');
-				}
-
-				return callback(null, result.rows[0].user_id);
-			});
-		},
-
-		function (user_id, callback) {
-			user.get(user_id, callback);	
-		}
-	], function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		return callback(null, result);
-	});
-};
-
-/**
 *	Find a user with his id
 **/
 user.findById = function (id, callback) {
@@ -183,6 +118,7 @@ user.findById = function (id, callback) {
 			(err) ? callback(err) : callback(null, data.rows[0]);
 		});
 };
+
 
 /**
 *	Create a new user in databse
@@ -234,8 +170,6 @@ user.getUserByEmail = function (email, done) {
 			if (err) {
 				return done(err);
 			}
-
-			console.log(data);
 
 			done(null, data.rows[0]);
 		});
@@ -317,7 +251,7 @@ user.__processDeleteVotes = function (schedule_ids, doodle_id, user_id, key, cal
 	else {
 		return callback(null, true);
 	}
-}
+};
 
 /**
 *	Recursive function to delete all the associations of a user with doodles

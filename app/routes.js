@@ -1,6 +1,7 @@
 // Dependencies ===========================
 var Doodle = require('./classes/doodle');
 var User = require('./classes/user');
+var PublicUser = require('./classes/publicUser');
 
 module.exports = function (app, passport) {
 
@@ -378,31 +379,6 @@ module.exports = function (app, passport) {
     // ==========================================================================
 
 
-
-    // =====================================
-    // NEW PUBLIC USER =====================
-    // =====================================
-
-    // !!!!!! DESACTIVATED 
-    // Show the user form
-    app.get('/new-public-user', function (req, res) {
-        res.render('new-public-user');
-    });
-
-    // !!!!!! DESACTIVATED 
-    // Process the user form
-    app.post('/new-public-user', function (req, res) {
-
-        req.session.user = {};
-
-        req.session.user.first_name = req.body.first_name;
-        req.session.user.last_name = req.body.last_name;
-
-        res.redirect('/new-public-doodle');
-    });
-
-
-
     // =====================================
     // NEW PUBLIC DOODLE ===================
     // =====================================
@@ -493,7 +469,7 @@ module.exports = function (app, passport) {
                     }
                 });
             }
-        })
+        });
     });
 
 
@@ -531,12 +507,7 @@ module.exports = function (app, passport) {
             // If the user link was called -> false
             var admin = result;
 
-            console.log("LINK");
-            console.log(admin);
-
             if (admin) {
-
-                console.log("GET ALL INFORMATIONS FROM ADMINISTRATION LINK ID");
 
                 // We get the informations about the doodle from the administration_link_id
                 Doodle.getAllInformationsFromAdministrationLinkId(req.params.id, function (err, doodle) {
@@ -545,9 +516,6 @@ module.exports = function (app, passport) {
                     }
 
                     req.session.admin_link_id = req.params.id;
-
-                    console.log("DOODLE");
-                    console.log(doodle);
 
                     res.render('public-doodle', {
                         doodle : doodle,
@@ -558,16 +526,11 @@ module.exports = function (app, passport) {
             }
             else {
 
-                console.log('GET ALL INFORMATIONS');
-
                 // We get informations about the doodle from its id
                 Doodle.getAllInformations(req.params.id, function (err, doodle) {
                     if (err) {
                         req.flash('message', 'An error occured : ' + err);
                     }
-
-                    console.log("DOODLE");
-                    console.log(doodle);
 
                     res.render('public-doodle', {
                         doodle : doodle,
@@ -592,34 +555,18 @@ module.exports = function (app, passport) {
     // Process add public user form
     app.post('/public-doodle/:id/add-public-user', function (req, res) {
 
-        console.log("ADD PUBLIC USER");
+        var doodle_id = req.params.id;
 
-        // We create the new temporary user
-        User.newPublicUser(req.body, function (err, user_id) {
+        var user = new PublicUser(req.body.first_name, req.body.last_name);
+
+        user.save(doodle_id, function (err, result) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
-                res.redirect('/public-doodle/' + req.params.admin_id);
+                return res.redirect('/public-doodle/' + req.params.id);
             }
             else {
-
-                console.log("USER ID");
-                console.log(user_id);
-
-                // We associate the new user with the doodle
-                Doodle.addPublicUser(req.params.id, user_id, function (err, result) {
-                    if (err) {
-                        req.flash('message', 'An error occured : ' + err);
-                        res.redirect('/public-doodle/' + req.params.id);
-                    }
-                    else {
-                        req.session.user_id = user_id;
-
-                        console.log("USER ID DANS LA SESSION");
-                        console.log(req.session.user_id);
-
-                        res.redirect('/public-doodle/' + req.params.id + '/add-public-vote');
-                    }
-                });
+                req.session.user_id = user.id;
+                return  res.redirect('/public-doodle/' + req.params.id + '/add-public-vote');
             }
         });
     });
@@ -694,17 +641,6 @@ module.exports = function (app, passport) {
         var id = req.params.id;
         var user_id = req.session.user_id;
 
-
-        console.log("ADD PUBLIC VOTE");
-        console.log("USER ID");
-        console.log(user_id);
-
-        console.log("DOODLE ID");
-        console.log(id);
-
-        console.log("PARAMETRES");
-        console.log(req.body);
-
         Doodle.saveVotes(id, user_id, req.body.schedules, function (err, result) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
@@ -712,8 +648,6 @@ module.exports = function (app, passport) {
             else {
                 req.flash('message', 'User created !');
             }
-
-            console.log("pas d'erreur on rediririge correctement");
 
             req.session.user_id = null;
             res.redirect('/public-doodle/' + id);
@@ -734,7 +668,7 @@ module.exports = function (app, passport) {
 
     	res.redirect('/');
     }
-}
+};
 
 
 
