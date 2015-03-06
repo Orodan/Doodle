@@ -2,18 +2,16 @@
 var bcrypt = require('bcrypt-nodejs');
 var uuid = require('node-uuid');
 var Global = require('./global');
-var Doodle = require('./doodle');
 var async = require('async');
+var Vote = require('./vote');
 
 // User Model to interact with database
 
 function user (email, first_name, last_name, password) {
 
-	this.id = uuid.v4();
-	// this.email = email;
+	this.id = user.uuid();
 	this.first_name = first_name;
 	this.last_name = last_name;
-	// this.password = Global.generateHash(password);
 
 }
 
@@ -31,6 +29,102 @@ user.prototype.save = function (callback) {
 		return callback(null, result);
 	});
 };
+
+
+// A TESTER
+/**
+*	Get the users of the doodle with their votes
+**/
+user.getUsersWithVotesFromDoodle = function (doodle_id, callback) {
+
+	async.waterfall([
+		function _getUsersFromDoodle (done) {
+			user.getUsersFromDoodle(doodle_id, done);
+		},
+
+		function _getVotesForEachUser (users, done) {
+			Vote.getVotesForEachUser(doodle_id, users, done);
+		}
+	],
+
+	function (err, results) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, results);
+	});
+};
+
+/**
+*	Get every users of the doodle
+**/
+user.getUsersFromDoodle = function (doodle_id, callback) {
+
+	async.waterfall([
+		function _getUserIds (done) {
+			user.getUserIds(doodle_id, done);
+		},
+
+		function _getUsersFromIds (user_ids, done) {
+			user.getUsersFromIds(user_ids, done);
+			
+		}], function (err, results) {
+			if (err) {
+				return callback(err);
+			}
+
+			return callback(null, results);
+		}
+	);
+};
+
+/**
+*	Get users from their ids
+**/
+user.getUsersFromIds = function (user_ids, callback) {
+
+	var users = [];
+
+	async.each(user_ids, 
+		function (user_id, done) {
+
+			user.get(user_id.user_id, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				users.push(result);
+
+				return done(null);
+			});
+		},
+		function (err) {
+			if (err) {
+				return callback(err);
+			}
+
+			return callback(null, users);
+		}
+	);
+};
+
+/**
+*	Get user ids of the doodle
+**/
+user.getUserIds = function (doodle_id, callback) {
+
+	var query = 'SELECT user_id FROM users_by_doodle WHERE doodle_id = ?';
+	user.db.execute(query, [ doodle_id ], function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, result.rows);
+	});
+};
+
+
 
 
 /**
@@ -100,23 +194,20 @@ user.newPublicUser = function (params , callback) {
 };
 
 /**
-* Check if valid password
-**/
-user.validPassword = function (password, user_password) {
-	return bcrypt.compareSync(password, user_password);
-};
-
-/**
 *	Find a user with his id
 **/
 user.findById = function (id, callback) {
 
 	var query = "SELECT * FROM user WHERE id = ?";
 
-	user.db.execute(query, [ id ], { prepare : true },
-		function (err, data) {
-			(err) ? callback(err) : callback(null, data.rows[0]);
-		});
+	user.db.execute(query, [ id ], { prepare : true }, function (err, data) {
+		if (err) {
+			callback(err);
+		} 
+		else {
+			callback(null, data.rows[0]);
+		}
+	});
 };
 
 
@@ -150,11 +241,14 @@ user.create = function (newUser, statut, callback) {
 */
 user.get = function (id, callback) {
 
-	var query = "SELECT * FROM user WHERE id = ?";
+	var query = 'SELECT * FROM user WHERE id = ?';
 
 	user.db.execute(query, [ id ], { prepare : true },
 		function (err, result) {
-			(err) ? callback(err) : callback(null, result.rows[0]);
+			if (err) {
+				return callback(err);	
+			}  
+			return callback(null, result.rows[0]);
 		});
 };
 
@@ -163,7 +257,7 @@ user.get = function (id, callback) {
 **/
 user.getUserByEmail = function (email, done) {
 
-	var query = "SELECT * From user WHERE email = ?";
+	var query = 'SELECT * From user WHERE email = ?';
 
 	user.db.execute(query, [ email ], { prepare : true },
 		function (err, data) {
@@ -315,7 +409,6 @@ user.__processDelete = function (doodle_ids, user_id, key, callback) {
 	}
 
 	// We destroy the association doodle-user ( Table doodles_by_user )
-
-}
+};
 
 module.exports = user;

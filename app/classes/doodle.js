@@ -1,9 +1,8 @@
 // dependencies ===============================================================
 var uuid = require('node-uuid');
-
-var doodle = {};
-
-module.exports = doodle;
+var async = require('async');
+var Schedule = require('./schedule');
+var User = require('./user');
 
 // FUNCTIONS ===============================================================
 
@@ -32,50 +31,27 @@ doodle.newPublic = function (data, callback) {
 	});
 };
 
+
+function doodle (name, description, user_id, callback) {
+
+	this.id = doodle.uuid();
+	this.name = name;
+	this.description = description;
+}
+
 /**
-*	Create a new private doodle from the data
-*	@return The new doodle created
+*	Save the doodle in database
 **/
-doodle.new = function (data, user_id, callback) {
+doodle.prototype.save = function (callback) {
 
-	var id = uuid.v4();
+	var query = 'INSERT INTO doodle (id, name, description) values (?, ?, ?)';
 
-	var query = 'INSERT INTO Doodle.doodle (id, name, description) values (?, ?, ?)';
-
-	// Create the doodle ( Table doodle )
-	doodle.db.execute(query, [ id, data.name, data.description ], { prepare : true}, function (err, result) {
+	doodle.db.execute(query, [ this.id, this.name, this.description ], { prepare : true }, function (err, result) {
 		if (err) {
 			return callback(err);
 		}
 
-		// Add the user to the doodle with the statut of admin ( Table users_by_doodle )
-		var user_statut = 'admin';
-		query = 'INSERT INTO Doodle.users_by_doodle (doodle_id, user_id, admin_statut) values (?, ?, ?)';
-		doodle.db.execute(query, [ id, user_id, user_statut ], { prepare : true }, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
-
-			// Associate the doodle to the user profile ( Table doodles_by_user )
-			query = "INSERT INTO Doodle.doodles_by_user (user_id, doodle_id) values (?, ?)";
-			doodle.db.execute(query, [ user_id, id ], { prepare : true }, function (err, result) {
-				if (err) {
-					return callback(err);
-				}
-
-				// Send back the created doodle 
-				query = 'SELECT * FROM Doodle.doodle WHERE id = ?';
-				doodle.db.execute(query, [ id ], { prepare : true }, function (err, data) {
-					if (err) {
-						return callback(err);
-					}
-
-					var doodle = data.rows[0];
-					return callback(null, doodle);
-				});
-
-			});
-		});
+		return callback(null, result);
 	});
 };
 
@@ -274,60 +250,23 @@ doodle.getVotesFromUser = function (id, user_id, callback) {
 doodle.getAllInformations = function (id, callback) {
 
 	// Creation a the object to send back
-	var doodle_data = {};
-	doodle_data.id = id;
+	async.series({
+		schedules : function (done) {
+			Schedule.getAllSchedulesFromDoodle(id, done);
+		},
 
-	
-
-	// Get the schedules
-	doodle.getSchedules(id, function (err, schedules) {
+		users : function (done) {
+			User.getUsersWithVotesFromDoodle(id, done);
+		}
+	}, function (err, results) {
 		if (err) {
 			return callback(err);
 		}
 
-		
+		results.id = id;
 
-		doodle_data.schedules = schedules;
+		return callback(null, results);
 
-		// Get the users
-		doodle.getUsersWithVotes(id, function (err, users) {
-			if (err) {
-				return callback(err);
-			}
-
-			
-
-			doodle_data.users = users;
-
-			return callback(null, doodle_data);
-			
-		});
-	});
-};
-
-/**
-*	Get all the users of a doodle with theirs votes
-**/
-doodle.getUsersWithVotes = function (id, callback) {
-
-	
-
-	// We get the user ids
-	doodle.getUsersIds(id, function (err, user_ids) {
-		if (err) {
-			return callback(err);
-		}
-
-		
-
-		// We get the users with theirs votes
-		doodle.getUsersFromIdsWithVotes(id, user_ids, function (err, users) {
-			if (err) {
-				return callback(err);
-			}
-
-			return callback(null, users);
-		});
 	});
 };
 
@@ -337,8 +276,6 @@ doodle.getUsersWithVotes = function (id, callback) {
 doodle.getUsersFromIdsWithVotes = function (id, user_ids, callback) {
 
 	var users = [];
-
-	// ERREUR ICI
 
 	doodle._processGetUsersFromIdsWithVotes(id, user_ids, users, 0, function (err, users) {
 		if (err) {
@@ -1697,4 +1634,6 @@ doodle.__processDeleteUsersFromDoodle = function (user_ids, key, callback) {
 		return callback(null, true);
 	}
 };
+
+module.exports = doodle;
 

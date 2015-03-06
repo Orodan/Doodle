@@ -20,15 +20,21 @@ client.connect( function(err) {
 
 // Models
 var user = require('./app/classes/user');
-var privateUser = require('./app/classes/privateUser');
-var publicUser = require('./app/classes/publicUser');
 var doodle = require('./app/classes/doodle');
+var schedule = require('./app/classes/schedule');
+var vote = require('./app/classes/vote');
 
 // Association model - database
 user.db = client;
-privateUser.db = client;
-publicUser.db = client;
+user.uuid = cassandra.types.uuid;
+
 doodle.db = client;
+doodle.uuid = cassandra.types.uuid;
+
+schedule.db = client;
+schedule.uuid = cassandra.types.uuid;
+
+vote.db = client;
 
 require('./app/config/passport')(passport);
 

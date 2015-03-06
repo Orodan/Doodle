@@ -2,12 +2,13 @@ var util = require('util');
 var user = require('./user');
 var Global = require('./global');
 var async = require('async');
+var bcrypt = require('bcrypt-nodejs');
 
 function privateUser (email, first_name, last_name, password) {
 
 	user.call(this, email, first_name, last_name, password);
 
-	this.email = first_name;
+	this.email = email;
 	this.password = Global.generateHash(password);
 	this.statut = 'registred';
 
@@ -53,7 +54,7 @@ privateUser.prototype.save = function (callback) {
 
 	// We save the informations specific to a private user
 	var query = 'INSERT INTO user_by_email (email, user_id) values (?, ?)';
-	privateUser.db.execute(query, [ this.email, this.id ], { prepare : true }, function (err, result) {
+	privateUser.super_.db.execute(query, [ this.email, this.id ], { prepare : true }, function (err, result) {
 		if (err) {
 			return callback(err);
 		}
@@ -68,10 +69,11 @@ privateUser.prototype.save = function (callback) {
 privateUser.findByEmail = function (email, callback) {
 
 	async.waterfall([
-		function (callback) {
+		function findIdByEmail (callback) {
 
 			var query = 'SELECT user_id FROM user_by_email WHERE email = ?';
-			privateUser.db.execute(query, [ email ], { prepare : true }, function (err, result) {
+			privateUser.super_.db.execute(query, [ email ], { prepare : true }, function (err, result) {
+
 				if (err) {
 					return callback(err);
 				}
@@ -84,8 +86,8 @@ privateUser.findByEmail = function (email, callback) {
 			});
 		},
 
-		function (user_id, callback) {
-			privateUser.get(user_id, callback);	
+		function getUser (user_id, callback) {
+			privateUser.super_.get(user_id, callback);	
 		}
 	], function (err, result) {
 		if (err) {
@@ -111,12 +113,20 @@ privateUser.basicAuthentication = function (email, password, callback) {
 			return callback('No user found with the email ' + email, false);
 		}
 
-		if (!user.validPassword(password, user_data.password) ) {
+		if (!privateUser.validPassword(password, user_data.password) ) {
 			return callback('Wrong password', false);
 		}
 
 		return callback(null, user_data);
 	});
 };
+
+/**
+* Check if valid password
+**/
+privateUser.validPassword = function (password, user_password) {
+	return bcrypt.compareSync(password, user_password);
+};
+
 
 module.exports = privateUser;

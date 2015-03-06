@@ -1,5 +1,6 @@
 // Dependencies ===========================
 var Doodle = require('./classes/doodle');
+var privateDoodle = require('./classes/privateDoodle');
 var User = require('./classes/user');
 var PublicUser = require('./classes/publicUser');
 
@@ -98,13 +99,14 @@ module.exports = function (app, passport) {
 
     // Process the doodle form
     app.post('/new-doodle', isLoggedIn, function (req, res) {
-        Doodle.new(req.body, req.user.id, function (err, doodle) {
 
+        var doodle = new privateDoodle(req.body.name, req.body.description);
+        doodle.save(req.user.id, function (err, result) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
             }
             else {
-               req.flash('message', 'Doodle created !');
+                req.flash('message', 'Doodle created !');
             }
 
             res.redirect('/profile');
@@ -328,7 +330,7 @@ module.exports = function (app, passport) {
             }
 
             res.redirect('/doodle/' + id);
-        })
+        });
     });
 
 
@@ -345,7 +347,7 @@ module.exports = function (app, passport) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
 
-                res.redirect('/doodle/' + id)
+                res.redirect('/doodle/' + id);
             }
             else {
                 res.render('add-vote', {

@@ -32,7 +32,7 @@ publicUser.prototype.save = function (doodle_id, callback) {
 				}
 			];
 
-			publicUser.db.batch(queries, { prepare : true }, function (err, result) {
+			publicUser.super_.db.batch(queries, { prepare : true }, function (err, result) {
 				if (err) {
 					return done(err);
 				}
