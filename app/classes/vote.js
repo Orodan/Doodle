@@ -1,5 +1,7 @@
 var async = require('async');
 
+var default_vote = 0;
+
 
 function vote () {}
 
@@ -44,6 +46,72 @@ vote.getVotesForEachUser = function (doodle_id, users, done) {
 			return done(null, users);
 		}
 	);
+};
+
+/**
+*	Generate a default vote for every users of the doodle on the schedule
+**/	
+vote.generateDefaultVoteForSchedule = function (doodle_id, schedule_id, users, callback) {
+
+	async.each(users, 
+		function (user, done) {
+			vote.generateDefaultVote(user, doodle_id, schedule_id, done);
+		},
+
+		function (err) {
+			if (err) {
+				return callback(err);
+			}
+
+			return callback(null);
+		}
+	);
+
+};
+
+/**
+*	Associate a default vote for the user on the schedule
+**/
+vote.generateDefaultVote = function (user, doodle_id, schedule_id, callback) {
+
+	// PROBLEME ICI AVEC LA VALEUR DU VOTE
+
+	/**
+	var query = 'INSERT INTO votes_by_user (doodle_id, user_id, schedule_id, vote) values (?, ?, ?, ?)';
+	vote.db.execute(query, [ doodle_id, user.id, schedule_id, default_vote ], { prepare : true }, function (err, result) {
+		if (err) {
+			console.log("ERREUR");
+			console.log(err);
+
+			return callback(err);
+		}
+
+		return callback(null, result);
+	});
+	**/
+
+	var queries = [
+		{
+			query : 'INSERT INTO votes_by_user (doodle_id, user_id, schedule_id, vote) values (?, ?, ?, ?)',
+			params : [ doodle_id, user.id, schedule_id, default_vote ]
+		},
+		{
+			query : 'INSERT INTO votes_by_schedule (doodle_id, schedule_id, user_id, vote) values (?, ?, ?, ?)',
+			params : [ doodle_id, schedule_id, user.id, default_vote ]
+		}
+	];
+
+	vote.db.batch(queries, { prepare : true }, function (err, result) {
+		if (err) {
+			console.log("TOTO");
+			console.log(err);
+
+			return callback(err);
+		}
+
+		return callback(null, result);
+	});
+
 };
 
 module.exports = vote;

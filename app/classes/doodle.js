@@ -3,6 +3,7 @@ var uuid = require('node-uuid');
 var async = require('async');
 var Schedule = require('./schedule');
 var User = require('./user');
+var Vote = require('./vote');
 
 // FUNCTIONS ===============================================================
 
@@ -595,34 +596,51 @@ doodle.addSchedules = function (id, params, callback) {
 /**
 *	Add a new schedule to the doodle
 **/
-doodle.addSchedule = function (id, params, callback) {
+doodle.addSchedule = function (doodle_id, params, callback) {					// EN COURS D'AMELIO
 
-	var schedule_id = uuid.v4();
 	var begin_date = params.begin_date + ' ' + params.begin_hour;
 	var end_date = params.end_date + ' ' + params.end_hour;
 
-	// We create the schedule ( table schedule )
-	doodle.createSchedule(schedule_id, begin_date, end_date, function (err, result) {
+	// Create the  schedule
+	var schedule = new Schedule(begin_date, end_date);
+
+	async.parallel([
+		function saveSchedule(done) {
+			schedule.save(doodle_id, done);
+		},
+
+		function _generateDefaultVoteForUsersOnSchedule (done) {
+			doodle.generateDefaultVoteForUsersOnSchedule(doodle_id, schedule.id, done);
+		}
+	], function (err) {
 		if (err) {
 			return callback(err);
 		}
 
-		// We associate the schedule with the doodle
-		doodle.associateScheduleToDoodle(id, schedule_id, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
+		return callback(null);
+	});
+};
 
-			// We add a undecided vote to every user of the doodle concerning this schedule
-			doodle.addDefaultVoteToUsers(id, schedule_id, function (err, result) {
-				if (err) {
-					return callback(err);
-				}
+/**
+*	Generate a default vote for every user of the doodle on the schedule
+**/
+doodle.generateDefaultVoteForUsersOnSchedule = function (doodle_id, schedule_id, callback) {
 
-				return callback(null, true);
-			});
-		});
+	// Generate a default vote for every user of the doodle on the new schedule
+	async.waterfall([
+		function _getUsers (done) {
+			User.getUsersFromDoodle(doodle_id, done);
+		},
 
+		function _generateDefaultVotesForSchedule (users, done) {
+			Vote.generateDefaultVoteForSchedule(doodle_id, schedule_id, users, done);
+		}
+	], function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, result);
 	});
 };
 

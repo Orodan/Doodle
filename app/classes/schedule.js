@@ -1,10 +1,57 @@
 // dependencies ===============================================================
 var async = require('async');
+var Vote = require('./vote');
 
 /**
 *	Construtor
 **/
-function schedule () {}
+function schedule (begin_date, end_date) {
+
+	this.id = schedule.uuid();
+	this.begin_date = begin_date;
+	this.end_date = end_date;
+}
+
+/**
+*	Save the schedule in database
+**/
+schedule.prototype.save = function (doodle_id, callback) {
+
+	async.parallel([
+		function _saveSchedule (done) {
+			var query = 'INSERT INTO schedule (id, begin_date, end_date) values (?, ?, ?)';
+			schedule.db.execute(query, [ this.id, this.begin_date, this.end_date ], { prepare : true }, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(null, result);
+			});
+		}.bind(this),
+
+		function _associateScheduleToDoodle (done) {
+
+			var query = 'INSERT INTO schedules_by_doodle (doodle_id, schedule_id) values (?, ?)';
+			schedule.db.execute(query, [ doodle_id, this.id ], { prepare : true }, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(null,  result);
+			});
+		}.bind(this)
+	],
+	function (err) {
+		if (err) {
+			console.log("ERREUR DANS SCHEDULE.SAVE");
+			console.log(err);
+
+			return callback(err);
+		}
+
+		return callback(null);
+	});
+};
 
 /**
 *	Get the schedule

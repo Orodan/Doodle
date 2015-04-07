@@ -5,14 +5,15 @@ var Global = require('./global');
 var async = require('async');
 var Vote = require('./vote');
 
-// User Model to interact with database
 
+/**
+*	Constructor
+**/
 function user (email, first_name, last_name, password) {
 
 	this.id = user.uuid();
 	this.first_name = first_name;
 	this.last_name = last_name;
-
 }
 
 /**
@@ -30,8 +31,6 @@ user.prototype.save = function (callback) {
 	});
 };
 
-
-// A TESTER
 /**
 *	Get the users of the doodle with their votes
 **/

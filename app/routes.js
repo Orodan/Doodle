@@ -285,9 +285,8 @@ module.exports = function (app, passport) {
             else {
                 req.flash('message', 'Schedule added !');
             }
-
+            
             res.redirect('/doodle/' +id);
-
         });
 
     });
