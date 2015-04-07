@@ -23,8 +23,8 @@ publicUser.prototype.save = function (doodle_id, callback) {
 			// We save the association user-doodle and doodle-user
 			var queries = [
 				{
-					query : 'INSERT INTO users_by_doodle (doodle_id, user_id) values (?, ?)',
-					params : [ doodle_id, this.id  ]
+					query : 'INSERT INTO users_by_doodle (doodle_id, user_id, admin_statut) values (?, ?, ?)',
+					params : [ doodle_id, this.id , 'unregistred' ]
 				},
 				{
 					query : 'INSERT INTO doodles_by_user (user_id, doodle_id) values (?, ?)',

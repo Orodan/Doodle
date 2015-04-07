@@ -11,12 +11,12 @@ var Vote = require('./vote');
 *	Create a new public doodle from the data
 * 	It is not associated with any user at the begining
 **/
-doodle.newPublic = function (data, callback) {
+doodle.newPublic = function (doodle_name, doodle_description, callback) {
 
 	var id = uuid.v4();
 
 	var query = 'INSERT INTO Doodle.doodle (id, name, description) values (?, ?, ?)';
-	doodle.db.execute(query, [ id, data.name, data.description ], { prepare : true }, function (err, result) {
+	doodle.db.execute(query, [ id, doodle_name, doodle_description ], { prepare : true }, function (err, result) {
 		if (err) {
 			return callback(err);
 		}
@@ -31,7 +31,6 @@ doodle.newPublic = function (data, callback) {
 		});
 	});
 };
-
 
 function doodle (name, description, user_id, callback) {
 
@@ -183,7 +182,13 @@ doodle.getUserAccess = function (id, user_id, callback) {
 			return callback(err);
 		}
 
-		return callback(null, data.rows[0].admin_statut);
+		if ( data.rows.length > 0 ) {
+			return callback(null, data.rows[0].admin_statut);	
+		}
+		// The user does not have access to the doodle
+		else {
+			return callback('The user does not have access to the doodle', null);
+		}
 	});
 };
 
@@ -754,17 +759,8 @@ doodle.addUser = function (id, params, callback) {
 				}
 			});
 		},
-		function _addUserToDoodle (user_id, done) {
-			doodle.addUserToDoodle(id, user_id, function (err, result) {
-				if (err) {
-					return done(err);
-				}
-
-				return done(null, user_id);
-			});
-		},
-		function _addDoodleToUser (user_id, done) {
-			doodle.addDoodleToUser(user_id, id, function (err, result) {
+		function _associateDoodleUser (user_id, done) {
+			doodle.associateDoodleUser(id, user_id, function (err, result) {
 				if (err) {
 					return done(err);
 				}
@@ -784,6 +780,33 @@ doodle.addUser = function (id, params, callback) {
 		return callback(null, true);
 	});
 };
+
+/**
+*	Create the association doodle-user and user-doodle
+**/
+doodle.associateDoodleUser = function (id, user_id, callback) {
+
+	// We associate user-doodle and doodle-user
+	var queries = [
+		{
+			query : 'INSERT INTO users_by_doodle (doodle_id, user_id, admin_statut) values (?, ?, ?)',
+			params : [ id, user_id, 'user' ]
+		},
+		{
+			query : 'INSERT INTO doodles_by_user (user_id, doodle_id) values (?, ?)',
+			params : [ user_id, id ]
+		}
+	];
+
+	doodle.db.batch(queries, { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, true);
+	});
+};
+
 
 /**
 *	Add for each schedules of the doodle new undecied votes to the user 
@@ -1045,6 +1068,83 @@ doodle.removeUserFromPublicDoodle = function (id, user_id, callback) {
 **/
 doodle.removeUserFromDoodle = function (id, user_id, callback) {
 
+	async.series([
+		function _deleteUserIfNotRegistred (done) {
+			User.getStatut(id, user_id, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				// Unregistred user, we delete him
+				if ( result == 'unregistred' ) {
+
+					var query = 'DELETE FROM user where id = ?';
+					doodle.db.execute(query, [ user_id ], { prepare : true }, function (err, result) {
+						if (err) {
+							return done(err);
+						}
+
+						return done(null, true);
+					});
+				}
+				else {
+					return done(null);
+				}
+			});
+		},
+		function _removeData (done) {
+			async.parallel([
+		
+				function _removeAssociationDoodleUser (done) {
+					var query = 'DELETE FROM Doodle.doodles_by_user WHERE user_id = ? AND doodle_id = ?';
+					doodle.db.execute(query, [ user_id, id ], { prepare : true }, done);
+				},
+				function _removeAssociationUserDoodle (done) {
+					var query = 'DELETE FROM Doodle.users_by_doodle WHERE doodle_id = ? AND user_id = ?';
+					doodle.db.execute(query, [ id, user_id ], { prepare : true }, done);
+				},
+				function _deleteVotesFromUser (done) {
+					doodle.deleteVotesFromUser(id, user_id, done);
+				}
+			], function (err, result) {
+				if (err) {
+					return callback(err);
+				}
+
+				return callback(null, true);
+			});
+		},
+		function _deleteDoodleIfNoOneLeft (done) {
+			// We check if the user was the last one of the doodle
+			doodle.getUsersIds(id, function (err, user_ids) {
+				if (err) {
+					return done(err);
+				}
+
+				// No user left associated with the doodle, we delete it
+				if ( user_ids.length === 0 ) {
+					doodle.delete(id, function (err, result) {
+						if (err) {
+							return done(err);
+						}
+
+						return done(null, false);
+					});
+				}
+				else {
+					return done(null, true);
+				}
+			});
+		}
+	], function (err, result) {
+		if (err) {
+			return done(err);
+		}
+	});
+
+	
+
+	/**
 	// We remove the association doodle-user
 	var query = 'DELETE FROM Doodle.doodles_by_user WHERE user_id = ? AND doodle_id = ?';
 	doodle.db.execute(query, [ user_id, id ], { prepare : true }, function (err, result) {
@@ -1072,7 +1172,7 @@ doodle.removeUserFromDoodle = function (id, user_id, callback) {
 					}
 
 					// No user left associated with the doodle, we delete it
-					if ( user_ids.length == 0 ) {
+					if ( user_ids.length === 0 ) {
 						doodle.delete(id, function (err, result) {
 							if (err) {
 								return callback(err);
@@ -1088,6 +1188,7 @@ doodle.removeUserFromDoodle = function (id, user_id, callback) {
 			});
 		});
 	});
+	**/
 };
 
 /**

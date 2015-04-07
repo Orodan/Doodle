@@ -264,6 +264,30 @@ user.get = function (id, callback) {
 };
 
 /**
+*	Get the statut of the user concerning the doodle
+*	( admin / user / unregistred )
+**/
+user.getStatut = function (doodle_id, user_id, callback) {
+
+	console.log("doodle_id");
+	console.log(doodle_id);
+
+	console.log("user_id");
+	console.log(user_id);
+
+	var query = 'SELECT admin_statut FROM users_by_doodle WHERE doodle_id = ? AND user_id = ?';
+	user.db.execute(query, [ doodle_id, user_id ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		console.log(result.rows[0]);
+
+		return callback(null, result.rows[0].admin_statut);
+	});
+};
+
+/**
 *	Get user with the email
 **/
 user.getUserByEmail = function (email, done) {

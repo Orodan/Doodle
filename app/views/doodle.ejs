@@ -55,11 +55,15 @@
 
         <div class="col-sm-4 ">
              <div class="jumbotron text-center">
-                <% if (user_statut == 'admin' ) { %>
-                    <a href='<%= doodle.id %>/add-user'>Add user</a><br>
-                    <a href='<%= doodle.id %>/add-schedule'>Add schedule</a><br>
+                <% if (user_statut != 'unregistred') { %>
+                    <% if (user_statut == 'admin' ) { %>
+                        <a href='<%= doodle.id %>/add-user'>Add user</a><br>
+                        <a href='<%= doodle.id %>/add-schedule'>Add schedule</a><br>
+                    <% } %>
+                    <a href='<%= doodle.id %>/add-vote'>Add vote</a>
+                <% } else { %>
+                    <a href='<%= doodle.id %>/add-public-user'>New public user</a>
                 <% } %>
-                <a href='<%= doodle.id %>/add-vote'>Add vote</a>
              </div>
         </div>
 

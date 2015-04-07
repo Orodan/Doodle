@@ -118,28 +118,36 @@ module.exports = function (app, passport) {
     // =====================================
     // SHOW DOODLE =========================
     // =====================================
-    app.get('/doodle/:id', isLoggedIn, function (req, res) {
+    app.get('/doodle/:id', function (req, res) {
 
         Doodle.getAllInformations(req.params.id, function (err, doodle) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
             }
 
+            // 2 ways :
+            // First : the user is not logged in
+            if ( !req.user ) {
+
+                req.flash('message', 'You are accessing this doodle without being logged in');
+
+                return res.render('doodle', {
+                    doodle : doodle,
+                    user_statut : 'unregistred',
+                    message : req.flash('message')
+                });
+
+            }
+
+            // Second : the user is registred
             var user_id = req.user.id; 
 
-            // We check the persmision of the user ( admin or just user )
-            Doodle.getUserAccess(req.params.id, user_id, function (err, result) {
+            // We check the persmision of the user ( admin or just user ), if he does not
+            // have access to it, an error appear
+            Doodle.getUserAccess(req.params.id, user_id, function (err, user_statut) {
                 if (err) {
                     req.flash('message', 'An error occured : ' + err);
-                }
-
-                var user_statut;
-                // User admin
-                if (result) {
-                    user_statut = 'admin';
-                }
-                else {
-                    user_statut = 'user';
+                    return res.redirect('/profile');
                 }
 
                 res.render('doodle', {
@@ -170,7 +178,66 @@ module.exports = function (app, passport) {
         });
     });
 
-    
+    // =====================================
+    // ADD PUBLIC USER IN PRIVATE DOODLE ===
+    // =====================================
+    app.get('/doodle/:id/add-public-user', function (req, res) {
+        res.render('add-public-user');
+    });
+
+    app.post('/doodle/:id/add-public-user', function (req, res) {
+
+        var doodle_id = req.params.id;
+        var user = new PublicUser(req.body.first_name, req.body.last_name);
+
+        user.save(doodle_id, function (err, result) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+                return res.redirect('/doodle/' + req.params.id);
+            }
+            else {
+                req.session.user_id = user.id;
+                return  res.redirect('/doodle/' + req.params.id + '/add-public-vote');
+            }
+        });
+    });
+
+    // =====================================
+    // ADD PUBLIC VOTE IN PRIVATE DOODLE ===
+    // =====================================
+    app.get('/doodle/:id/add-public-vote', function (req, res) {
+        
+        Doodle.getSchedules(req.params.id, function (err, schedules) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+                res.redirect('/doodle/' + req.params.id);
+            }
+            else {
+                res.render('add-public-vote', {
+                    schedules : schedules
+                });
+            }
+        });
+    });
+
+    // Process add public vote form
+    app.post('/doodle/:id/add-public-vote', function (req, res) {
+
+        var id = req.params.id;
+        var user_id = req.session.user_id;
+
+        Doodle.saveVotes(id, user_id, req.body.schedules, function (err, result) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+            }
+            else {
+                req.flash('message', 'User created !');
+            }
+
+            req.session.user_id = null;
+            res.redirect('/doodle/' + id);
+        });
+    });
 
     // =====================================
     // ADD USER ============================
@@ -196,8 +263,6 @@ module.exports = function (app, passport) {
         });
 
     });
-
-
 
     // =====================================
     // REMOVE USER =========================
@@ -254,9 +319,9 @@ module.exports = function (app, passport) {
                         }
                     });
                 }
-                // The doodle has no user left, it has been deleted
+                // The doodle has no user left, it was deleted
                 else {
-                    req.flash('message', 'DELETEoodle deleted !');
+                    req.flash('message', 'Doodle deleted !');
                     res.redirect('/profile');
                 }
             }
@@ -436,15 +501,15 @@ module.exports = function (app, passport) {
     // Process the schedules form
     app.post('/new-public-schedules', function (req, res) {
 
-        // We create the doodle 
-        Doodle.newPublic(req.session.doodle, function (err, doodle) {
+        // Create the doodle 
+        Doodle.newPublic(req.session.doodle.name, req.session.doodle.description, function (err, doodle) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
                 res.redirect('index');
             }
             else {
 
-                // We create the schedules of the doodle
+                // Create the schedules of the doodle
                 Doodle.addSchedules(doodle.id, req.body.schedules, function (err, result) {
                     if (err) {
                         req.flash('message', 'An error occured : ' + err);
@@ -454,7 +519,7 @@ module.exports = function (app, passport) {
 
                         var user_link = req.headers.host + '/public-doodle/' + doodle.id;
 
-                        // We generate and associate a administration link to the doodle
+                        // Generate and associate a administration link to the doodle
                         Doodle.generateLinks(doodle.id, function (err, data) {
                             if (err) {
                                 req.flash('message', 'An error occured : ' + err);
