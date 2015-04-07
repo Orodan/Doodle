@@ -31,6 +31,18 @@ user.prototype.save = function (callback) {
 	});
 };
 
+user.getIdByEmail = function (email, callback) {
+
+	var query = 'SELECT user_id FROM user_by_email WHERE email = ?';
+	user.db.execute(query, [ email ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, result.rows[0]);
+	});
+};
+
 /**
 *	Get the users of the doodle with their votes
 **/

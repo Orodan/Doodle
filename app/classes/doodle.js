@@ -475,23 +475,23 @@ doodle.checkUserAlreadyAssociated = function (id, user_id, callback) {
 
 /**
 *	Check with the email if the user is registred
+*	Return his id if he is registred, false otherwise
 **/
 doodle.checkUserByEmail = function (email, callback) {
 
-	var query = 'SELECT * FROM Doodle.user WHERE email = ?';
-	doodle.db.execute(query, [ email ], { prepare : true }, function (err, data) {
+	User.getIdByEmail(email, function (err, result) {
 		if (err) {
 			return callback(err);
 		}
 
 		// The user is registred
-		if ( data.rows.length > 0 ) {
-			return callback(null, true);
+		if ( result ) {
+			return callback(null, result.user_id);
 		}
 		else {
 			return callback(null, false);
 		}
-	});	
+	});
 };
 
 /**
@@ -722,65 +722,66 @@ doodle.addPublicUser = function(id, user_id, callback) {
 doodle.addUser = function (id, params, callback) {
 	var email = params.email;
 
-	// We check if the user is registred
-	doodle.checkUserByEmail(email, function (err, result) {
+	async.waterfall([
+		// Check if the user is registred
+		function _checkUserByEmail(done) {
+			doodle.checkUserByEmail(email, function (err, user_id) {
+				if (err) {
+					return done(err);
+				}
+
+				// The user is not registred
+				if (!user_id) {
+					return done('The user you tried to add is not registred');
+				}
+				else {
+					return done(null, user_id);
+				}
+			});
+		},
+		// Check if the user is already associated with the doodle
+		function _checkUserAlreadyAssociated (user_id, done) {
+			doodle.checkUserAlreadyAssociated(id, user_id, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				if (result) {
+					return done('The user you tried to add is already a member of this doodle');
+				}
+				else {
+					return done(null, user_id);
+				}
+			});
+		},
+		function _addUserToDoodle (user_id, done) {
+			doodle.addUserToDoodle(id, user_id, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(null, user_id);
+			});
+		},
+		function _addDoodleToUser (user_id, done) {
+			doodle.addDoodleToUser(user_id, id, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(null, user_id);
+			});
+		},
+		// For each schedule of the doodle, we add a new undecided votes to the new user
+		function _addDefaultVotesToUser(user_id, done) {
+			doodle.addDefaultVotesToUser(id, user_id, done);
+		}
+	], function (err, result) {
 		if (err) {
 			return callback(err);
 		}
 
-		// The user is registred
-		if (result) {
-			// We get the user_id associate to the email
-			var query = "SELECT id FROM Doodle.user WHERE email = ?";
-			doodle.db.execute(query, [ email ], { prepare : true }, function (err, data) {
-				if (err) {
-					return callback(err);
-				}
-
-				var user_id = data.rows[0].id;
-
-				// We check if the user is already associated with the doodle
-				doodle.checkUserAlreadyAssociated(id, user_id, function (err, result) {
-					if (err) {
-						return callback(err);
-					}
-
-					// The user is already associated
-					if (result) {
-						return callback('The user you tried to add is already a member of this doodle');
-					}
-					else {
-						// We use this user_id to associate doodle and user
-						doodle.addUserToDoodle(id, user_id, function (err, result) {
-							if (err) {
-								return callback(err);
-							}
-							else {
-
-								// We use this user_id to associate user and doodle
-								doodle.addDoodleToUser(user_id, id, function (err, result) {
-									if (err) {
-										return callback(err);
-									}
-
-									// We add for each schedule new undecided votes to the new user
-									doodle.addDefaultVotesToUser(id, user_id, function (err, result) {
-										if (err) {
-											return callback(err);
-										}
-
-										return callback(null, true);
-									});
-								});
-							}
-						});
-					}
-				});
-			});
-		}
-		else {
-			return callback('The user you tried to add is not registred');
-		}
+		return callback(null, true);
 	});
 };
 

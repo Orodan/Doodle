@@ -74,22 +74,6 @@ vote.generateDefaultVoteForSchedule = function (doodle_id, schedule_id, users, c
 **/
 vote.generateDefaultVote = function (user, doodle_id, schedule_id, callback) {
 
-	// PROBLEME ICI AVEC LA VALEUR DU VOTE
-
-	/**
-	var query = 'INSERT INTO votes_by_user (doodle_id, user_id, schedule_id, vote) values (?, ?, ?, ?)';
-	vote.db.execute(query, [ doodle_id, user.id, schedule_id, default_vote ], { prepare : true }, function (err, result) {
-		if (err) {
-			console.log("ERREUR");
-			console.log(err);
-
-			return callback(err);
-		}
-
-		return callback(null, result);
-	});
-	**/
-
 	var queries = [
 		{
 			query : 'INSERT INTO votes_by_user (doodle_id, user_id, schedule_id, vote) values (?, ?, ?, ?)',
@@ -103,9 +87,6 @@ vote.generateDefaultVote = function (user, doodle_id, schedule_id, callback) {
 
 	vote.db.batch(queries, { prepare : true }, function (err, result) {
 		if (err) {
-			console.log("TOTO");
-			console.log(err);
-
 			return callback(err);
 		}
 
