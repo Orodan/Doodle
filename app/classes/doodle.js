@@ -596,7 +596,7 @@ doodle.addSchedules = function (id, params, callback) {
 /**
 *	Add a new schedule to the doodle
 **/
-doodle.addSchedule = function (doodle_id, params, callback) {					// EN COURS D'AMELIO
+doodle.addSchedule = function (doodle_id, params, callback) {
 
 	var begin_date = params.begin_date + ' ' + params.begin_hour;
 	var end_date = params.end_date + ' ' + params.end_hour;
