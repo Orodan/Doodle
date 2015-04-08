@@ -80,12 +80,24 @@ user.getUsersFromDoodle = function (doodle_id, callback) {
 		function _getUsersFromIds (user_ids, done) {
 			user.getUsersFromIds(user_ids, done);
 			
-		}], function (err, results) {
+		}], function (err, users) {
 			if (err) {
 				return callback(err);
 			}
 
-			return callback(null, results);
+			// Sort the users
+			users.sort(function (user1, user2) {
+				if ( user1.first_name < user2.first_name ) {
+					return -1;
+				}
+				else if ( user1.first_name > user2.first_name ) {
+					return 1;
+				}
+
+				return 0;
+			});
+
+			return callback(null, users);
 		}
 	);
 };

@@ -79,7 +79,6 @@ schedule.getAllSchedulesFromDoodle = function (doodle_id, callback) {
 		function _getSchedulesFromIds (schedule_ids, done) {
 			schedule.getSchedulesFromIds(schedule_ids, done);			
 		}
-
 	], function (err, results) {
 		if (err) {
 			return callback(err);
@@ -116,6 +115,18 @@ schedule.getSchedulesFromIds = function (schedule_ids, callback) {
 			if (err) {
 				return callback(err);
 			}
+
+			// Sort the tab
+			schedules.sort(function (schedule1, schedule2) {
+				if ( schedule1.begin_date < schedule2.begin_date ) {
+					return -1;
+				}
+				else if (schedule1.begin_date > schedule2.begin_date ) {
+					return 1;
+				}
+
+				return 0;
+			});
 
 			return callback(null, schedules);
 		}
