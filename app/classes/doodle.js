@@ -255,7 +255,6 @@ doodle.getVotesFromUser = function (id, user_id, callback) {
 **/
 doodle.getAllInformations = function (id, callback) {
 
-	// Creation a the object to send back
 	async.series({
 		schedules : function (done) {
 			Schedule.getAllSchedulesFromDoodle(id, done);
@@ -270,6 +269,8 @@ doodle.getAllInformations = function (id, callback) {
 		}
 
 		results.id = id;
+
+		console.log(results);
 
 		return callback(null, results);
 
@@ -603,14 +604,14 @@ doodle.addSchedules = function (id, params, callback) {
 **/
 doodle.addSchedule = function (doodle_id, params, callback) {
 
-	var begin_date = params.begin_date + ' ' + params.begin_hour;
-	var end_date = params.end_date + ' ' + params.end_hour;
+	var begin_date = new Date(params.begin_date + ' ' + params.begin_hour).getTime();
+	var end_date = new Date(params.end_date + ' ' + params.end_hour).getTime();
 
 	// Create the  schedule
 	var schedule = new Schedule(begin_date, end_date);
 
 	async.parallel([
-		function saveSchedule(done) {
+		function _saveSchedule(done) {
 			schedule.save(doodle_id, done);
 		},
 

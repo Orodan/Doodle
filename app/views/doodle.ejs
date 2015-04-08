@@ -34,7 +34,11 @@
                             <tr>
                                 <th></th>
                                 <% for (var key in doodle.schedules) { %>
-                                    <th scope="col"><%= doodle.schedules[key].begin_date %> <br/> <%= doodle.schedules[key].end_date %></th>
+                                    <% if ( doodle.schedules[key].begin_date.toDateString() === doodle.schedules[key].end_date.toDateString() ) { %>
+                                            <th scope="col"><%= doodle.schedules[key].begin_date.toDateString() %> <br/> <%= doodle.schedules[key].begin_date.toTimeString() %> <br/> <%= doodle.schedules[key].end_date.toTimeString() %></th>
+                                        <% } else { %>
+                                            <th scope="col"><%= doodle.schedules[key].begin_date %> <br/> <%= doodle.schedules[key].end_date %></th>
+                                        <% } %>
                                 <% } %>
                             </tr>
                         </thead>

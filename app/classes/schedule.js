@@ -20,7 +20,7 @@ schedule.prototype.save = function (doodle_id, callback) {
 	async.parallel([
 		function _saveSchedule (done) {
 			var query = 'INSERT INTO schedule (id, begin_date, end_date) values (?, ?, ?)';
-			schedule.db.execute(query, [ this.id, this.begin_date, this.end_date ], { prepare : true }, function (err, result) {
+			schedule.db.execute(query, [ this.id, this.begin_date, this.end_date, ], { prepare : true }, function (err, result) {
 				if (err) {
 					return done(err);
 				}
@@ -43,9 +43,6 @@ schedule.prototype.save = function (doodle_id, callback) {
 	],
 	function (err) {
 		if (err) {
-			console.log("ERREUR DANS SCHEDULE.SAVE");
-			console.log(err);
-
 			return callback(err);
 		}
 
@@ -105,6 +102,9 @@ schedule.getSchedulesFromIds = function (schedule_ids, callback) {
 				if (err) {
 					return done(err);
 				}
+
+				result.begin_date = new Date(result.begin_date);
+				result.end_date = new Date(result.end_date);
 
 				schedules.push(result);
 
