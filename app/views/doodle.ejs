@@ -19,13 +19,13 @@
 
         <% if (message.length > 0) { %>
             <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
-                <%= message %>
+                <%= __('' + message + ''); %>
             </div>
         <% } %>
 
         <div class="col-sm-8 ">
             <div class="jumbotron text-center">
-                <h1>Doodle</h1>
+                <h1><%= __('Doodle') %></h1>
                 <br/>
 
                 <% if (doodle) { %>
@@ -61,12 +61,12 @@
              <div class="jumbotron text-center">
                 <% if (user_statut != 'unregistred') { %>
                     <% if (user_statut == 'admin' ) { %>
-                        <a href='<%= doodle.id %>/add-user'>Add user</a><br>
-                        <a href='<%= doodle.id %>/add-schedule'>Add schedule</a><br>
+                        <a href='<%= doodle.id %>/add-user'><%= __('Add user') %></a><br>
+                        <a href='<%= doodle.id %>/add-schedule'><%= __('Add schedule') %></a><br>
                     <% } %>
-                    <a href='<%= doodle.id %>/add-vote'>Add vote</a>
+                    <a href='<%= doodle.id %>/add-vote'><%= __('Add vote') %></a>
                 <% } else { %>
-                    <a href='<%= doodle.id %>/add-public-user'>New public user</a>
+                    <a href='<%= doodle.id %>/add-public-user'><%= __('Add temporary user') %></a>
                 <% } %>
              </div>
         </div>
@@ -74,8 +74,8 @@
         <% if (user_statut == 'admin' ) { %>
             <div class="col-sm-4 ">
                  <div class="jumbotron text-center">
-                    <a href='<%= doodle.id %>/remove-user'>Remove user</a><br>
-                    <a href='<%= doodle.id %>/delete-schedule'>Remove schedule</a><br>
+                    <a href='<%= doodle.id %>/remove-user'><%= __('Remove user') %></a><br>
+                    <a href='<%= doodle.id %>/delete-schedule'><%= __('Remove schedule') %></a><br>
                  </div>
             </div>
         <% } %>

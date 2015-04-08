@@ -13,8 +13,8 @@
 <div class="container">
 
     <div class="page-header text-center">
-        <h1><span class="fa fa-anchor"></span> Profile Page</h1>
-        <a href="/logout" class="btn btn-default btn-sm">Logout</a>
+        <h1><span class="fa fa-anchor"></span> <%= __('Profile Page') %></h1>
+        <a href="/logout" class="btn btn-default btn-sm"><%= __('Logout') %></a>
     </div>
 
     <div class="row">
@@ -29,7 +29,7 @@
         <!-- USER INFORMATIONS -->
         <div class="col-sm-6">
             <div class="well">
-                <h3><span class="fa fa-user"></span> Informations</h3>
+                <h3><span class="fa fa-user"></span> <% __('Informations') %></h3>
 
                     <% if (user) { %>
                         <p>
@@ -47,7 +47,7 @@
         <!-- DOODLES INFORMATIONS -->
          <div class="col-sm-6">
             <div class="well">
-                <h3><span class="fa fa-archive"></span> Mes doodles</h3>
+                <h3><span class="fa fa-archive"></span> <%= __('My doodles') %></h3>
                     <% if (doodles) { %>
                         <ul>
                             <% for(var key in doodles) { %>
@@ -55,9 +55,9 @@
                                     <strong><%= doodles[key].id %></strong><br>
                                     <%= doodles[key].name %><br>
                                     <%= doodles[key].description %><br>
-                                    <a href='/doodle/<%= doodles[key].id %>'>Access doodle</a><br>
+                                    <a href='/doodle/<%= doodles[key].id %>'><%= __('Access doodle') %></a><br>
                                     <% if (doodles[key].user_statut == 'admin') { %>
-                                        <a href='/doodle/delete/<%= doodles[key].id %>'>Remove doodle</a>
+                                        <a href='/doodle/delete/<%= doodles[key].id %>'><%= __('Remove doodle') %></a>
                                     <% } %>
                                 </li>
                                 <br>
@@ -65,7 +65,7 @@
                         </ul>
                     <% } %>
                 <br>
-                <a href="/new-doodle" class="btn btn-default btn-sm">Create doodle</a>
+                <a href="/new-doodle" class="btn btn-default btn-sm"><%= __('Create doodle') %></a>
             </div>
         </div>
 

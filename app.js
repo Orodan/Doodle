@@ -9,6 +9,7 @@ var path = require('path');
 var cassandra = require('cassandra-driver');
 var passport = require('passport');
 var flash = require('connect-flash');
+var i18n = require('i18n');
 
 // configuration ===============================================================
 
@@ -42,7 +43,6 @@ require('./app/config/passport')(passport);
 app.set('views', path.join(__dirname, 'app/views'));
 app.set('view engine', 'ejs');
 
-
 // set up express
 app.use(cookieParser());
 app.use(bodyParser.json());
@@ -58,6 +58,19 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());	// persistent login sessions
 app.use(flash());				// flash messages stored in session
+
+// Internationalization
+i18n.configure({
+	locales: ['en', 'fr'],
+	directory: __dirname + '/app/locales',
+	cookie: 'monsupercookie'
+});
+
+app.use(i18n.init);
+app.use(function (req, res, next) {
+	res.cookie('monsupercookie', 'en', { maxAge: 900000, httpOnly: true });
+	next();
+});
 
 // routes ======================================================================
 require('./app/routes.js')(app, passport);	

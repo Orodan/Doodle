@@ -270,8 +270,6 @@ doodle.getAllInformations = function (id, callback) {
 
 		results.id = id;
 
-		console.log(results);
-
 		return callback(null, results);
 
 	});

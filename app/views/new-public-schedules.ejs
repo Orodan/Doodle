@@ -16,7 +16,7 @@
             <div class="jumbotron text-center">
                 <h1><span class="fa fa-money"></span> Doodle</h1>
 
-                <p>Choose the schedules</p><br/>
+                <p><%= __('Choose the schedules') %></p><br/>
 
                 <% if (typeof message != 'undefined' && message.length > 0) { %>
                     <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
@@ -46,10 +46,10 @@
                         <br/>
                     </div>
 
-                    <button class="btn btn-primary" id="add-schedule">Add schedule</button>
+                    <button class="btn btn-primary" id="add-schedule"><%= __('Add schedule') %></button>
                     <br/><br/>
 
-                    <button type="submit" class="btn btn-default">Submit</button>
+                    <button type="submit" class="btn btn-default"><%= __('Submit') %></button>
                 </form>
             </div>
         </div>

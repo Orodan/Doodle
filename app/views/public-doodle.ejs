@@ -25,11 +25,11 @@
 
         <% if (admin) { %>
             <div class="col-sm-6 col-sm-offset-3 alert alert-danger" role="alert">
-                Administrator
+                <%= __('Administrator') %>
             </div>
         <% } else { %>
             <div class="col-sm-6 col-sm-offset-3 alert alert-danger" role="alert">
-                User
+                <%= __('User') %>
             </div>
         <% } %>
 
@@ -65,10 +65,10 @@
 
         <div class="col-sm-4 ">
              <div class="jumbotron text-center">
-                <a href='<%= doodle.id %>/add-public-user'>Add user</a><br>
+                <a href='<%= doodle.id %>/add-public-user'><%= __('Add user') %></a><br>
                 <% if (admin) { %>
-                    <a href='<%= doodle.id %>/remove-public-user'>Remove user</a><br>
-                    <a href='<%= doodle.id %>/remove-public-doodle'>Remove doodle</a><br>
+                    <a href='<%= doodle.id %>/remove-public-user'><%= __('Remove user') %></a><br>
+                    <a href='<%= doodle.id %>/remove-public-doodle'><%= __('Remove doodle') %></a><br>
                 <% } %>
              </div>
         </div>

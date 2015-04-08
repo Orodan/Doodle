@@ -17,18 +17,18 @@
         <div class="col-sm-6 col-sm-offset-3">
 
             <div class="jumbotron text-center">
-                <h1>Add public user</h1>
+                <h1><%= __('New temporary user') %></h1>
                 <br/>
 
                 <form action="#" method="post">
                     <div class="form-group">
-                        <input type="text" name="first_name" placeholder="Your first name" class="form-control">
+                        <input type="text" name="first_name" placeholder="<%= __('Your first name') %>" class="form-control">
                     </div>
                     <div class="form-group">
-                        <input type="text" name="last_name" placeholder="Your last name" class="form-control">
+                        <input type="text" name="last_name" placeholder="<%= __('Your last name') %>" class="form-control">
                     </div>
                     
-                    <button type="submit" class="btn btn-default">Submit</button>
+                    <button type="submit" class="btn btn-default"><%= __('Submit') %></button>
                 </form>
 
             </div>

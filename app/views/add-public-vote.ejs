@@ -17,7 +17,7 @@
         <div class="col-sm-8 col-sm-offset-2">
 
             <div class="jumbotron text-center">
-                <h1>Add public vote</h1>
+                <h1><%= __('New vote') %></h1>
                 <br/>
 
                 <form action="#" method="post">
@@ -25,20 +25,20 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Schedule</th>
-                                <th>Vote</th>
+                                <th><%= __('Schedule') %></th>
+                                <th><%= __('Vote') %></th>
                             </tr>
                         </thead>
                         <tbody>
                             <% for (var key in schedules) { %>
                                 <tr>
                                     <input type="hidden" value="<%= schedules[key].id%>"  name="schedules[<%= key %>][id]">
-                                    <th scope="col"><%= schedules[key].begin_date %> To <br/> <%= schedules[key].end_date %></th>
+                                    <th scope="col"><%= schedules[key].begin_date %> <%= __('To') %> <br/> <%= schedules[key].end_date %></th>
                                     <th>
                                         <select name="schedules[<%= key %>][vote]" class="form-control">
-                                            <option value="-1">Unavailable</option>
-                                            <option value="0">Do not know</option>
-                                            <option value="1">Available</option>
+                                            <option value="-1"><%= __('Unavailable') %></option>
+                                            <option value="0"><%= __('Do not know') %></option>
+                                            <option value="1"><%= __('Available') %></option>
                                         </select>
                                     </th>
                                 </tr>
@@ -46,7 +46,7 @@
                         </tbody>
                     </table>
                     
-                    <button type="submit" class="btn btn-default">Submit</button>
+                    <button type="submit" class="btn btn-default"><%= __('Submit') %></button>
                 </form>
 
             </div>

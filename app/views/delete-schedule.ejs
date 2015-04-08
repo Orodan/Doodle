@@ -17,7 +17,7 @@
         <div class="col-sm-6 col-sm-offset-3">
 
             <div class="jumbotron text-center">
-                <h1>Delete schedule</h1>
+                <h1><%= __('Delete schedule') %></h1>
                 <br/>
 
                 <form action="#" method="post">
@@ -25,12 +25,12 @@
                     <div class="form-group">
                         <select name="schedule" class="form-control">
                             <% for (var key in schedules ) { %>
-                                <option value='<%= schedules[key].id %>'><%= schedules[key].begin_date%> to <%= schedules[key].end_date%></option>
+                                <option value='<%= schedules[key].id %>'><%= schedules[key].begin_date%> <%= __('To') %> <%= schedules[key].end_date%></option>
                             <% } %>
                         </select>
                     </div>
 
-                    <button type="submit" class="btn btn-default">Submit</button>
+                    <button type="submit" class="btn btn-default"><%= __('Submit') %></button>
                 </form>
 
             </div>
