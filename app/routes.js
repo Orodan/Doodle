@@ -7,8 +7,7 @@ var PublicUser = require('./classes/publicUser');
 module.exports = function (app, passport) {
 
     app.get('/choose-language', function (req, res) {
-        console.log(req.query.language);
-        res.cookie('monsupercookie', req.query.language, { maxAge: 900000, httpOnly: true });
+        res.cookie('mylanguage', req.query.language, { maxAge: 900000, httpOnly: true });
         res.redirect('/');
     });
 
@@ -16,8 +15,12 @@ module.exports = function (app, passport) {
     // HOME PAGE ===========================
     // =====================================
     app.get('/', function (req, res) {
+
+        console.log(req.cookies);
+
     	res.render('index', {
-            message : req.flash('message')
+            message : req.flash('message'),
+            language : req.cookies.mylanguage
         });
     });
 

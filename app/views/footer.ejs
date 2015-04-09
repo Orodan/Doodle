@@ -1,8 +1,16 @@
 
 <form action="/choose-language" method="get">
 	<select name="language">
-		<option value="en"><%= __('English') %></option>
-		<option value="fr"><%= __('French') %></option>
+		<% if ( language && language == 'en' ) { %>
+			<option value="en" selected><%= __('English') %></option>
+		<% } else { %>
+			<option value="en"><%= __('English') %></option>
+		<% } %>
+		<% if ( language && language == 'fr' ) { %>
+			<option value="fr" selected><%= __('French') %></option>
+		<% } else { %>
+			<option value="fr"><%= __('French') %></option>
+		<% } %>
 	</select>
 	<button type="submit" class="btn btn-default"><%= __('Submit') %></button>
 </form>

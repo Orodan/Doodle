@@ -63,12 +63,14 @@ app.use(flash());				// flash messages stored in session
 i18n.configure({
 	locales: ['en', 'fr'],
 	directory: __dirname + '/app/locales',
-	cookie: 'monsupercookie'
+	cookie: 'mylanguage'
 });
 
 app.use(i18n.init);
 app.use(function (req, res, next) {
-	res.cookie('monsupercookie', 'en', { maxAge: 900000, httpOnly: true });
+	if ( !req.cookies.mylanguage ) {
+		res.cookie('mylanguage', 'en', { maxAge: 900000, httpOnly: true });	
+	}
 	next();
 });
 
