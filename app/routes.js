@@ -6,6 +6,12 @@ var PublicUser = require('./classes/publicUser');
 
 module.exports = function (app, passport) {
 
+    app.get('/choose-language', function (req, res) {
+        console.log(req.query.language);
+        res.cookie('monsupercookie', req.query.language, { maxAge: 900000, httpOnly: true });
+        res.redirect('/');
+    });
+
 	// =====================================
     // HOME PAGE ===========================
     // =====================================

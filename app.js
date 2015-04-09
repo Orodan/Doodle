@@ -53,7 +53,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({ 	
 					secret : 'masupersessionsecrete',
 					saveUninitialized : true,
-					resave : true 
+					resave : true
 				}));
 app.use(passport.initialize());
 app.use(passport.session());	// persistent login sessions
