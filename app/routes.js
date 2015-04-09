@@ -3,6 +3,7 @@ var Doodle = require('./classes/doodle');
 var privateDoodle = require('./classes/privateDoodle');
 var User = require('./classes/user');
 var PublicUser = require('./classes/publicUser');
+var async = require('async');
 
 module.exports = function (app, passport) {
 
@@ -15,8 +16,6 @@ module.exports = function (app, passport) {
     // HOME PAGE ===========================
     // =====================================
     app.get('/', function (req, res) {
-
-        console.log(req.cookies);
 
     	res.render('index', {
             message : req.flash('message'),
@@ -68,7 +67,27 @@ module.exports = function (app, passport) {
     // We use route middleware to verify the user
     app.get('/profile', isLoggedIn, function (req, res) {
 
-        Doodle.getDoodlesFromUser(req.user.id, function (err, doodles) {
+        async.parallel ({
+            doodles: function _getDoodlesFromUser (done) {
+                Doodle.getDoodlesFromUser(req.user.id, function (err, doodles) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    return done(null, doodles);
+                });
+            }, 
+            participation_requests: function _getParticipationRequests (done) {
+                User.getParticipationRequests(req.user.id, function (err, result) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    return done(null, result);
+                });
+            }
+        }, function (err, results) {
+
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
             }
@@ -76,8 +95,9 @@ module.exports = function (app, passport) {
             res.render('profile', {
                 user : req.user,
                 message : req.flash('message'),
-                doodles : doodles
-            });
+                doodles : results.doodles,
+                participation_requests: results.participation_requests
+            });            
         });
     });
 
@@ -148,7 +168,7 @@ module.exports = function (app, passport) {
 
             }
 
-            // Second : the user is registred
+            // Second : the user is logged in
             var user_id = req.user.id; 
 
             // We check the persmision of the user ( admin or just user ), if he does not
@@ -255,12 +275,31 @@ module.exports = function (app, passport) {
         res.render('add-user');
     });
 
-    // Process the doodle add-user form
-    app.post('/doodle/:id/add-user', isLoggedIn, function (req, res) {
+    // Create a new participation request
+    app.post('/doodle/:id/add-participation-request', isLoggedIn, function (req, res) {
 
         var id = req.params.id;
+        var email = req.body.email;
 
-        Doodle.addUser(req.params.id, req.body, function (err, result) {
+        Doodle.addParticipationRequest(id, email, function (err, result) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+            }
+            else {
+                req.flash('message', 'Participation request send ! ');
+            }
+
+            res.redirect('/doodle/' + id);
+        });
+    });
+
+    // Add to the doodle the user invited to participate
+    app.get('/doodle/:id/participate', isLoggedIn, function (req, res) {
+
+        var id = req.params.id;
+        var user_id = req.user.id;
+
+        Doodle.addUser(id, user_id, function (err, result) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
             }
@@ -270,7 +309,24 @@ module.exports = function (app, passport) {
 
             res.redirect('/doodle/' + id);
         });
+    });
 
+    // Refuse the invitation to participate to a doodle
+    app.get('/doodle/:id/decline', isLoggedIn, function (req, res) {
+
+        var id = req.params.id;
+        var user_id = req.user.id;
+
+        Doodle.declineParticipationRequest(id, user_id, function (err, result) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+            }
+            else {
+                req.flash('message', 'Request deleted ! ');
+            }
+
+            res.redirect('/profile');
+        });
     });
 
     // =====================================

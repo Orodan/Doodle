@@ -69,6 +69,30 @@
             </div>
         </div>
 
+        <!-- PARTICIPATION REQUESTS -->
+        <div class="col-sm-6">  
+            <div class="well">
+                <h3><span class="fa fa-question"></span> <%= __('Participation requests') %></h3>
+                <% if ( participation_requests != null && participation_requests.length > 0 ) { %>
+                    <ul>
+                        <% for (var key in participation_requests ) { %>
+                            <li>
+                                <strong><%= participation_requests[key].name %></strong><br/>
+                                <%= participation_requests[key].description %><br/>
+
+                                <a href='/doodle/<%= participation_requests[key].id %>/participate'><%= __('Participate') %></a><br/>
+
+
+                                <a href='/doodle/<%= participation_requests[key].id %>/decline'><%= __('Decline') %></a>
+                            </li>
+                        <% } %>
+                    </ul>
+                <% } else { %>
+                    <p><%= __('You have no request to participate to a doodle') %></p>
+                <% } %>
+            </div>
+        </div>
+
     </div>
 
 </div>

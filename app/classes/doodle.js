@@ -262,6 +262,9 @@ doodle.getAllInformations = function (id, callback) {
 
 		users : function (done) {
 			User.getUsersWithVotesFromDoodle(id, done);
+		},
+		participation_requests : function (done) {
+			doodle.getParticipationRequests(id, done);
 		}
 	}, function (err, results) {
 		if (err) {
@@ -273,6 +276,36 @@ doodle.getAllInformations = function (id, callback) {
 		return callback(null, results);
 
 	});
+};
+
+/**
+*	Get the participation requests about the doodle
+**/
+doodle.getParticipationRequests = function (id, callback) {
+
+	async.waterfall([
+		function _getUsersId (done) {
+			var query = 'SELECT * FROM doodle_requests_by_doodle WHERE doodle_id = ?';
+			doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
+				if (err) {
+					return callback(err);
+				}
+
+				return done(null, result.rows);
+			});
+		},
+		function _getUsersInfos (user_ids, done) {
+			User.getUsersFromIds(user_ids, done);
+		}
+	],
+	function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, result);
+	});
+
 };
 
 /**
@@ -701,6 +734,125 @@ doodle.associateScheduleToDoodle = function (doodle_id, schedule_id, callback) {
 };
 
 /**
+*	Delete participation request between the user and the doodle
+**/
+doodle.declineParticipationRequest = function (id, user_id, callback) {
+
+	var queries = [
+		{
+			query: 'DELETE FROM doodle_requests_by_user WHERE user_id = ? AND doodle_id = ?',
+			params: [ user_id, id ]
+		},
+		{
+			query: 'DELETE FROM doodle_requests_by_doodle WHERE doodle_id = ? AND user_id = ?',
+			params: [ id, user_id ]
+		}
+	];
+	doodle.db.batch(queries, { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+		return callback(null, true);
+	});
+};
+
+/**
+*	Send request to participate to the doodle at the user
+**/
+doodle.addParticipationRequest = function (id, email, callback) {
+
+	async.waterfall([
+		// Check if the user is registred
+		function _checkUserByEmail(done) {
+			doodle.checkUserByEmail(email, function (err, user_id) {
+				if (err) {
+					return done(err);
+				}
+
+				// The user is not registred
+				if (!user_id) {
+					return done('The user you tried to add is not registred');
+				}
+				else {
+					return done(null, user_id);
+				}
+			});
+		},
+		// Check if there is already a participation request send to this user
+		function _checkUserAlreadyAsked (user_id, done) {
+			doodle.checkUserAlreadyAsked(id, user_id, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				if (result) {
+					return done('You already asked to participate to this user, wait for his response !');
+				}
+				else {
+					return done(null, user_id);
+				}
+			});
+		},
+		// Check if the user is already associated with the doodle
+		function _checkUserAlreadyAssociated (user_id, done) {
+			doodle.checkUserAlreadyAssociated(id, user_id, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				if (result) {
+					return done('The user you tried to add is already a member of this doodle');
+				}
+				else {
+					return done(null, user_id);
+				}
+			});
+		},
+		function _addParticipationRequest  (user_id, done) {
+
+			var queries = [
+				{
+					query : 'INSERT INTO doodle_requests_by_user (user_id, doodle_id) values (?, ?)',
+					params : [ user_id , id ]
+				},
+				{
+					query : 'INSERT INTO doodle_requests_by_doodle (doodle_id, user_id) values (?, ?)',
+					params : [ id, user_id ]
+				}
+			];
+			doodle.db.batch(queries, { prepare : true }, done);
+		}
+	], function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, true);
+	});
+};
+
+/**
+*	Check if there is already a participation request between this user and this doodle
+**/
+doodle.checkUserAlreadyAsked = function (id, user_id, callback) {
+
+	var query = 'SELECT * FROM doodle_requests_by_doodle WHERE doodle_id = ? AND user_id = ?';
+	doodle.db.execute(query, [ id, user_id ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		// Already requested
+		if (result.rows.length > 0) {
+			return callback(null, true);
+		}
+
+		return callback(null, false);
+	});
+
+};
+
+/**
 *	Associate a public user to a doodle
 **/
 doodle.addPublicUser = function(id, user_id, callback) {
@@ -723,42 +875,10 @@ doodle.addPublicUser = function(id, user_id, callback) {
 /**
 *	Associate an user to a doodle
 **/
-doodle.addUser = function (id, params, callback) {
-	var email = params.email;
+doodle.addUser = function (id, user_id, callback) {
 
-	async.waterfall([
-		// Check if the user is registred
-		function _checkUserByEmail(done) {
-			doodle.checkUserByEmail(email, function (err, user_id) {
-				if (err) {
-					return done(err);
-				}
-
-				// The user is not registred
-				if (!user_id) {
-					return done('The user you tried to add is not registred');
-				}
-				else {
-					return done(null, user_id);
-				}
-			});
-		},
-		// Check if the user is already associated with the doodle
-		function _checkUserAlreadyAssociated (user_id, done) {
-			doodle.checkUserAlreadyAssociated(id, user_id, function (err, result) {
-				if (err) {
-					return done(err);
-				}
-
-				if (result) {
-					return done('The user you tried to add is already a member of this doodle');
-				}
-				else {
-					return done(null, user_id);
-				}
-			});
-		},
-		function _associateDoodleUser (user_id, done) {
+	async.parallel([
+		function _associateDoodleUser (done) {
 			doodle.associateDoodleUser(id, user_id, function (err, result) {
 				if (err) {
 					return done(err);
@@ -768,8 +888,22 @@ doodle.addUser = function (id, params, callback) {
 			});
 		},
 		// For each schedule of the doodle, we add a new undecided votes to the new user
-		function _addDefaultVotesToUser(user_id, done) {
+		function _addDefaultVotesToUser (done) {
 			doodle.addDefaultVotesToUser(id, user_id, done);
+		},
+		function _deleteParticipationRequest (done) {
+			
+			var queries = [
+				{
+					query: 'DELETE FROM doodle_requests_by_user WHERE user_id = ? AND doodle_id = ?',
+					params: [ user_id, id ]
+				},
+				{
+					query: 'DELETE FROM doodle_requests_by_doodle WHERE doodle_id = ? AND user_id = ?',
+					params: [ id, user_id ]
+				}
+			];
+			doodle.db.batch(queries, { prepare : true }, done);
 		}
 	], function (err, result) {
 		if (err) {

@@ -23,6 +23,7 @@
             </div>
         <% } %>
 
+        <!-- DOODLE DATA -->
         <div class="col-sm-8 ">
             <div class="jumbotron text-center">
                 <h1><%= __('Doodle') %></h1>
@@ -57,6 +58,7 @@
             </div>
         </div>
 
+        <!-- NAVIGATION -->
         <div class="col-sm-4 ">
              <div class="jumbotron text-center">
                 <% if (user_statut != 'unregistred') { %>
@@ -80,6 +82,20 @@
             </div>
         <% } %>
 
+        <!-- PARTICIPATION REQUESTS -->
+        <% if ( typeof doodle.participation_requests != 'undefined' && doodle.participation_requests.length > 0 ) { %>
+            <div class="col-sm-8">
+                <div class="alert alert-info">
+                    <ul>
+                    <% for ( var key in doodle.participation_requests ) { %>
+                        <li>
+                            <%= doodle.participation_requests[key].first_name + ' ' + doodle.participation_requests[key].last_name + ' has been invited to participate' %>
+                        </li>
+                    <% } %>
+                    </ul>
+                </div>
+            </div>
+        <% } %>
 
     </div>
 

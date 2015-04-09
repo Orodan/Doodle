@@ -31,6 +31,64 @@ user.prototype.save = function (callback) {
 	});
 };
 
+/**
+*	Get the participation requests associated with that user
+**/
+user.getParticipationRequests = function (user_id, callback) {
+
+	async.waterfall([
+		function _getDoodleId (done) {
+			var query = 'SELECT doodle_id FROM doodle_requests_by_user WHERE user_id = ?';
+			user.db.execute(query, [ user_id ], { prepare : true }, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				if (result.rows.length > 0) {
+					return done(null, result.rows);
+				}
+
+				return done(null, null);
+			});
+		},
+		function _getDoodleInfos (doodle_ids, done) {
+			if ( doodle_ids ) {
+
+				var doodle_infos = [];
+				async.each(doodle_ids, function _extractInfo (doodle_id, finish) {
+					var query = 'SELECT * from doodle WHERE id = ?';
+					user.db.execute(query, [ doodle_id.doodle_id ], { prepare : true }, function (err, result) {
+						if (err) {
+							return done(err);
+						}
+
+						doodle_infos.push(result.rows[0]);
+						return finish();
+					});	
+				}, function (err) {
+					if (err) {
+						return done(err);
+					}
+
+					return done(null, doodle_infos);
+				});
+			}
+			else {
+				return done(null, false);	
+			}
+		}
+	], function (err, result) {
+		if (err) {
+			return callback(err); 
+		}
+
+		return callback(null, result);
+	});
+};
+
+/**
+*	Return the email of the user with that id
+**/
 user.getIdByEmail = function (email, callback) {
 
 	var query = 'SELECT user_id FROM user_by_email WHERE email = ?';
