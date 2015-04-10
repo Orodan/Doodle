@@ -54,5 +54,18 @@
 	"Not available": "Not available",
 	"Delete schedule": "Delete schedule",
 	"Schedule removed !": "Schedule removed !",
-	"User removed !": "User removed !"
+	"User removed !": "User removed !",
+	"An error occured : The user you tried to add is already a member of this doodle": "An error occured : The user you tried to add is already a member of this doodle",
+	"Public doodle": "Public doodle",
+	"Choose the schedules": "Choose the schedules",
+	"Doodle informations": "Doodle informations",
+	"Administration link": "Administration link",
+	"User link": "User link",
+	"User": "User",
+	"New temporary user": "New temporary user",
+	"Your first name": "Your first name",
+	"Your last name": "Your last name",
+	"New vote": "New vote",
+	"Schedule": "Schedule",
+	"Vote": "Vote"
 }

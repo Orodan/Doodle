@@ -1,5 +1,3 @@
-
-
 .table tbody>tr>td.vert-align{
     vertical-align: middle;
 }
@@ -10,4 +8,12 @@ td .alert {
 
 .horiz-scroll {
 	overflow: auto;
+}
+
+thead>tr>th{
+	color: black;
+}
+
+.table td, .table th {
+    border: none;
 }

@@ -260,7 +260,7 @@ module.exports = function (app, passport) {
                 req.flash('message', 'An error occured : ' + err);
             }
             else {
-                req.flash('message', 'User created !');
+                req.flash('message', 'User added !');
             }
 
             req.session.user_id = null;

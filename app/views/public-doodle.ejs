@@ -17,62 +17,76 @@
 <body>
     <div class="container">
 
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="/profile">Doodle</a>
+                </div>
+                <div>
+                    <ul class="nav navbar-nav">
+                        <li><a href='<%= doodle.id %>/add-public-user'><%= __('Add user') %></a></li>
+                        <% if (admin) { %>
+                            <li><a href='<%= doodle.id %>/remove-public-user'><%= __('Remove user') %></a></li>
+                            <li><a href='<%= doodle.id %>/remove-public-doodle'><%= __('Remove doodle') %></a></li>
+                        <% } %>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
         <% if (message.length > 0) { %>
             <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
                 <%= message %>
             </div>
         <% } %>
 
-        <% if (admin) { %>
-            <div class="col-sm-6 col-sm-offset-3 alert alert-danger" role="alert">
-                <%= __('Administrator') %>
-            </div>
-        <% } else { %>
-            <div class="col-sm-6 col-sm-offset-3 alert alert-danger" role="alert">
-                <%= __('User') %>
-            </div>
-        <% } %>
-
-        <div class="col-sm-8">
-            <div class="jumbotron text-center">
-                <h1>Doodle</h1>
-                <br/>
-
-                <% if (doodle) { %>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <% for (var key in doodle.schedules) { %>
-                                    <th scope="col"><%= doodle.schedules[key].begin_date %> <br/> <%= doodle.schedules[key].end_date %></th>
-                                <% } %>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% for (var key in doodle.users) { %>
-                                <tr>
-                                    <td scope="row"><%= doodle.users[key].first_name %> <%= doodle.users[key].last_name %></td>
-                                    <% for ( var key2 in doodle.users[key].votes ) { %>
-                                        <td><%= doodle.users[key].votes[key2].vote %></td>
-                                    <% } %>
-                                </tr>
+        <!-- DOODLE DATA -->
+        <% if (doodle) { %>
+        <div class="col-md-12 jumbotron table-responsive horiz-scroll">
+            <table class="table table-condensed">
+                <thead>
+                    <!-- Display date (day, month, year) -->
+                    <tr>
+                        <th></th>
+                        <% for (var key in doodle.schedules) { %>
+                            <% if ( doodle.schedules[key].begin_date.toDateString() === doodle.schedules[key].end_date.toDateString() ) { %>
+                                <th colspan=2 class="col-md-2" scope="col"><%= doodle.schedules[key].begin_date.toDateString() %></th>
+                            <% } else { %>
+                                <th class="col-md-1" scope="col"><%= doodle.schedules[key].begin_date.toDateString() %></th>
+                                <th class="col-md-1" scope="col"><%= doodle.schedules[key].end_date.toDateString() %></th>
                             <% } %>
-                        </tbody>
-                    </table>
-                <% } %>
-            </div>
+                        <% } %>
+                    </tr>
+                    <!-- Display schedule (minute, hour) -->
+                    <tr>
+                        <th></th>
+                        <% for (var key in doodle.schedules) { %>
+                                <th class="col-md-2" scope="col"><%= doodle.schedules[key].begin_date.toTimeString() %> </th>
+                                <th class="col-md-2" scope="col"><%= doodle.schedules[key].end_date.toTimeString() %> </th> 
+                        <% } %>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% for (var key in doodle.users) { %>
+                        <tr>
+                            <td class="vert-align" scope="row"><%= doodle.users[key].first_name %> <%= doodle.users[key].last_name %></td>
+                            <% for ( var key2 in doodle.users[key].votes ) { %>
+                                <% if ( doodle.users[key].votes[key2].vote == -1 ) { %>
+                                        <td colspan=2 class="smal"><div class="alert alert-danger vert-align"><span class="fa fa-frown-o"></span> <%= __('Not available') %></div></td>
+                                    <% } %>
+                                    <% if ( doodle.users[key].votes[key2].vote == 0 ) { %>
+                                        <td colspan=2 class="smal"><div class="alert alert-warning vert-align"><span class="fa fa-meh-o"></span> <%= __('Do not know') %></div></td>
+                                    <% } %>
+                                    <% if ( doodle.users[key].votes[key2].vote == 1 ) { %>
+                                        <td colspan=2 class="smal"><div class="alert alert-success vert-align"><span class="fa fa-smile-o"></span> <%= __('Available') %></div></td>
+                                    <% } %>
+                            <% } %>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
         </div>
-
-        <div class="col-sm-4 ">
-             <div class="jumbotron text-center">
-                <a href='<%= doodle.id %>/add-public-user'><%= __('Add user') %></a><br>
-                <% if (admin) { %>
-                    <a href='<%= doodle.id %>/remove-public-user'><%= __('Remove user') %></a><br>
-                    <a href='<%= doodle.id %>/remove-public-doodle'><%= __('Remove doodle') %></a><br>
-                <% } %>
-             </div>
-        </div>
-
+        <% } %>
 
     </div>
 
