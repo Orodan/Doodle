@@ -36,10 +36,18 @@
                                 <th></th>
                                 <% for (var key in doodle.schedules) { %>
                                     <% if ( doodle.schedules[key].begin_date.toDateString() === doodle.schedules[key].end_date.toDateString() ) { %>
-                                            <th scope="col"><%= doodle.schedules[key].begin_date.toDateString() %> <br/> <%= doodle.schedules[key].begin_date.toTimeString() %> <br/> <%= doodle.schedules[key].end_date.toTimeString() %></th>
-                                        <% } else { %>
-                                            <th scope="col"><%= doodle.schedules[key].begin_date %> <br/> <%= doodle.schedules[key].end_date %></th>
-                                        <% } %>
+                                            <th colspan=2 class="col-sm-4" scope="col"><%= doodle.schedules[key].begin_date.toDateString() %> </th>
+                                    <% } else { %>
+                                            <th class="col-sm-2" scope="col"><%= doodle.schedules[key].begin_date.toDateString() %></th>
+                                            <th class="col-sm-2" scope="col"><%= doodle.schedules[key].end_date.toDateString() %></th>
+                                    <% } %>
+                                <% } %>
+                            </tr>
+                            <tr>
+                                <th></th>
+                                <% for (var key in doodle.schedules) { %>
+                                        <th class="col-sm-2" scope="col"><%= doodle.schedules[key].begin_date.toTimeString() %> </th>
+                                        <th class="col-sm-2" scope="col"><%= doodle.schedules[key].end_date.toTimeString() %> </th> 
                                 <% } %>
                             </tr>
                         </thead>
@@ -48,7 +56,15 @@
                                 <tr>
                                     <td scope="row"><%= doodle.users[key].first_name %> <%= doodle.users[key].last_name %></td>
                                     <% for ( var key2 in doodle.users[key].votes ) { %>
-                                        <td><%= doodle.users[key].votes[key2].vote %></td>
+                                        <% if ( doodle.users[key].votes[key2].vote == -1 ) { %>
+                                            <td colspan=2 ><div class="alert alert-danger"><span class="fa fa-frown-o"></span> <%= __('Not available') %></div></td>
+                                        <% } %>
+                                        <% if ( doodle.users[key].votes[key2].vote == 0 ) { %>
+                                            <td colspan=2><div class="alert alert-warning"><span class="fa fa-meh-o"></span> <%= __('Do not know') %></div></td>
+                                        <% } %>
+                                        <% if ( doodle.users[key].votes[key2].vote == 1 ) { %>
+                                            <td colspan=2><div class="alert alert-success"><span class="fa fa-smile-o"></span> <%= __('Available') %></div></td>
+                                        <% } %>
                                     <% } %>
                                 </tr>
                             <% } %>
