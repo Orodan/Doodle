@@ -1,0 +1,13 @@
+
+
+.table tbody>tr>td.vert-align{
+    vertical-align: middle;
+}
+
+td .alert {
+	margin-bottom: 0px;
+}
+
+.horiz-scroll {
+	overflow: auto;
+}
