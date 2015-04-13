@@ -1066,22 +1066,18 @@ doodle.deleteUsersFromDoodle = function (id, callback) {
 **/
 doodle.deleteVotes = function (id, callback) {
 
-	// We delete the votes on ( Table votes_by_user )
-	var query = 'DELETE FROM Doodle.votes_by_user WHERE doodle_id = ?';
-	doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
-		if (err) {
-			return callback(err);
+	async.parallel ([
+		function _deleteVotesByUser (done) {
+			var query = 'DELETE FROM Doodle.votes_by_user WHERE doodle_id = ?';
+			doodle.db.execute(query, [ id ], { prepare : true }, done);
+		},
+		function _deleteVotesBySchedule (done) {
+			var query = 'DELETE FROM Doodle.votes_by_schedule WHERE doodle_id = ?';
+			doodle.db.execute(query, [ id ], { prepare : true }, done);
 		}
-
-		// We delete the votes on ( Table votes_by_schedule )
-		var query = 'DELETE FROM Doodle.votes_by_schedule WHERE doodle_id = ?';
-		doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
-
-			return callback(null, true);
-		});
+	], 
+	function (err, result) {
+		return callback(err);
 	});
 };
 
@@ -1274,54 +1270,6 @@ doodle.removeUserFromDoodle = function (id, user_id, callback) {
 			return done(err);
 		}
 	});
-
-	
-
-	/**
-	// We remove the association doodle-user
-	var query = 'DELETE FROM Doodle.doodles_by_user WHERE user_id = ? AND doodle_id = ?';
-	doodle.db.execute(query, [ user_id, id ], { prepare : true }, function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		// We remove the association user-doodle
-		query = 'DELETE FROM Doodle.users_by_doodle WHERE doodle_id = ? AND user_id = ?';
-		doodle.db.execute(query, [ id, user_id ], { prepare : true }, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
-
-			// We delete every vote associated with the user on the doodle
-			doodle.deleteVotesFromUser(id, user_id, function (err, result) {
-				if (err) {
-					return callback(err);
-				}
-
-				// We check if the user was the last one of the doodle
-				doodle.getUsersIds(id, function (err, user_ids) {
-					if (err) {
-						return callback(err);
-					}
-
-					// No user left associated with the doodle, we delete it
-					if ( user_ids.length === 0 ) {
-						doodle.delete(id, function (err, result) {
-							if (err) {
-								return callback(err);
-							}
-
-							return callback(null, false);
-						});
-					}
-					else {
-						return callback(null, true);
-					}
-				});
-			});
-		});
-	});
-	**/
 };
 
 /**
@@ -1373,87 +1321,216 @@ doodle.deleteVoteFromSchedules = function (id, user_id, schedule_ids, callback) 
 **/
 doodle.delete = function (id, callback) {
 
-	// First we get every users associated with the doodle
-	doodle.getUsersIds(id, function (err, user_ids) {
-		if (err) {
-			return callback(err);
+	async.parallel([
+		// Delete votes
+		function _deleteVotes (done) {
+			doodle.deleteVotes(id, done);
+		},
+		// Delete schedules
+		function _deleteSchedules (done) {
+			doodle.deleteSchedules(id, done);
+		},
+		// Delete Participation requests
+		function _deleteParticipationRequests (done) {
+			doodle.deleteParticipationRequests(id, done);
+		},
+		// Remove association between users and doodle
+		function _removeUsers (done) {
+			doodle.removeUsers(id, done);
+		},
+		// Delete doodle itself
+		function _deleteDoodle (done) {
+			var query = 'DELETE FROM doodle WHERE id = ?';
+			doodle.db.execute(query, [ id ], { prepare : true }, done);
 		}
-
-		// We get every schedules associated with the doodle
-		doodle.getScheduleIds(id, function (err, schedule_ids) {
+	],	function (err, result) {
 			if (err) {
 				return callback(err);
 			}
 
-			// We destroy all the votes of the doodle
-			doodle.deleteVotes(id, function (err, result) {
+			return callback(null, true);
+		}
+	);
+};
+
+/**
+*	Remove the association between the doodle and its users
+*	Delete the public users associated
+**/
+doodle.removeUsers = function (id, callback) {
+
+	async.waterfall([
+		function _getUserIds (done) {
+			doodle.getUsersIds(id, done);
+		},
+		function (user_ids, done) {
+			async.each(user_ids, function (user_id, done) {
+				doodle.removeUser(id, user_id, done);
+			}, 
+			function (err) {
+				return done(err);
+			});
+		}
+	],
+	function (err) {
+		return callback(err);
+	});
+};
+
+/**
+*	Remove the association between the doodle and the user
+*	Delete the user if he is public
+**/
+doodle.removeUser = function (id, user_id, callback) {
+
+	async.parallel([
+		function _deleteUserIfPublic (done) {
+			var query = 'SELECT statut FROM user WHERE id = ?';
+			doodle.db.execute(query, [ user_id ], { prepare : true }, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				var statut;
+				if (result.rows.length > 0) {
+					statut = result.rows[0].statut;
+				}				
+
+				if (statut == 'temporary') {
+					var query = 'DELETE FROM user WHERE id = ?';
+					doodle.db.execute(query, [ user_id ], { prepare : true }, done);
+				}
+				else {
+					return done(null, true);
+				}
+			});	
+		},
+		function _removeAssociation (done) {
+			doodle.removeAssociation(id, user_id, done);
+		}
+	], 
+	function (err) {
+		return callback(err);
+	});	
+};
+
+/**
+*	Remove the association between the doodle and the user
+**/
+doodle.removeAssociation = function (id, user_id, callback) {
+	async.parallel([
+		function _removeAssocationDoodlesByUser (done) {
+			var query = 'DELETE FROM doodles_by_user WHERE user_id = ? AND doodle_id = ?';
+			doodle.db.execute(query, [ user_id, id ], { prepare : true }, done);
+		},
+
+		function _removeAssocationUsersByDoodle (done) {
+			var query = 'DELETE FROM users_by_doodle WHERE doodle_id = ? AND user_id = ?';
+			doodle.db.execute(query, [ id, user_id ], { prepare : true}, done);
+		}
+	],
+	function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+		return callback(null, true);
+	});
+};
+
+/**
+*	Delete the participation requests
+**/
+doodle.deleteParticipationRequests = function (id, callback) {
+
+	async.waterfall([
+		function _getUserIdsFromParticipationRequests (done) {
+			var query = 'SELECT user_id FROM doodle_requests_by_doodle WHERE doodle_id = ?';
+			doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
 				if (err) {
 					return callback(err);
 				}
 
-				// We destroy the schedules
-				doodle.deleteSchedules(id, schedule_ids, function (err, result) {
-					if (err) {
-						return callback(err);
-					}
-
-					// We destroy the association doodle-user ( Table users_by_doodle )
-					doodle.removeUsersOfDoodle(id, function (err, result) {
-						if (err) {
-							return callback(err);
-						}
-
-						// We destroy the association user-doodle ( Table doodles_by_user )
-						doodle.removeDoodleOfUsers(user_ids, id, function (err, result) {
-							if (err) {
-								return callback(err);
-							}
-
-							// We destroy the doodle itself
-							doodle.deleteDoodle(id, function (err, result) {
-								if (err) {
-									return callback(err);
-								}
-
-								return callback(null, true);
-							});
-						});
-					});
-				});
+				return done(null, result.rows);
 			});
-		});
+		},
+		function _deleteParticipationRequests (user_ids, done) {
+			async.each(user_ids, function _deleteParticipationRequest (user_id, finish) {
+				doodle.deleteParticipationRequest(id, user_id, finish);
+			}, 
+			function (err) {
+				return done(err);
+			});
+		}
+	],
+	function (err) {
+		return callback(err);
+	});
+
+};
+
+/**
+*	Delete the participation request
+**/
+doodle.deleteParticipationRequest = function (doodle_id, user_id, callback) {
+
+	async.parallel([
+		function _deleteDoodleRequestByUser (done) {
+			var query = 'DELETE FROM doodle_requests_by_user WHERE user_id = ? AND doodle_id = ?';
+			doodle.db.execute(query, [ user_id, doodle_id ], { prepare: true }, done);
+		},
+		function _deleteDoodleRequestByDoodle (done) {
+			var query = 'DELETE FROM doodle_requests_by_doodle WHERE doodle_id = ? AND user_id = ?';
+			doodle.db.execute(query, [ doodle_id, user_id ], { prepare : true }, done);
+		}
+	], function (err) {
+		return callback(err);
 	});
 };
 
 /**
 *	Delete every schedules associated with the doodle
 **/
-doodle.deleteSchedules = function (id, schedule_ids, callback) {
+doodle.deleteSchedules = function (id, callback) {
 
-	// We delete the association doodle-schedule
-	var query = 'DELETE FROM Doodle.schedules_by_doodle WHERE doodle_id = ?';
-	doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
-		if (err) {
-			return callback(err);
+	async.waterfall([
+		function _getScheduleIds (done) {
+			var query = 'SELECT schedule_id FROM schedules_by_doodle WHERE doodle_id = ?';
+			doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(null, result.rows);
+			});
+		},
+		function _deleteAssociationSchedulesDoodle (schedule_ids, done) {
+			var query = 'DELETE FROM schedules_by_doodle WHERE doodle_id = ?';
+			doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(null, schedule_ids);
+			});
+		}, 
+		function _deleteSchedules (schedule_ids, done) {
+			async.each(schedule_ids, function (schedule_id, finish) {
+				var query = 'DELETE FROM schedule WHERE id = ?';
+				doodle.db.execute(query, [ schedule_id.schedule_id ], { prepare : true }, finish);
+			},
+			function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(null, true);
+			});
 		}
-
-		// We delete every schedule itself
-		doodle.deleteSchedulesFromIds(schedule_ids, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
-
-			return callback(null, true);
-		});
-	});
-};
-
-/**
-*	Delete the schedules from an array of ids
-**/
-doodle.deleteSchedulesFromIds = function (schedule_ids, callback) {
-
-	doodle.__processDeleteSchedulesFromIds(schedule_ids, 0, callback);
+	],
+	function (err, result) {
+		return callback(err, result);
+	}
+	);
 };
 
 /**
@@ -1471,64 +1548,8 @@ doodle.deleteDoodle = function (id, callback) {
 	});
 };
 
-/**
-*	Remove all the associations user-doodle of a doodle 
-*	( Table doodles_by_user )
-**/
-doodle.removeDoodleOfUsers = function (user_ids, doodle_id, callback) {
-
-	doodle._processRemoveDoodleOfUsers(user_ids, doodle_id, 0, function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		return callback(null, true);
-	});
-};
-
-/**
-*	Remove all users associated to a doodle 
-*	( Does not destroy the user )
-*	( Table users_by_doodle )
-**/
-doodle.removeUsersOfDoodle = function (id, callback) {
-
-	var query = "DELETE FROM Doodle.users_by_doodle WHERE doodle_id = ?";
-	doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		return callback(null, true);
-	});
-};
-
 
 // INTERNAL FUNCTIONS ===============================================================
-
-/**
-*	Recursive function to remove all the associations user-doodle of a doodle
-* 	( Table doodles_by_user )
-**/
-doodle._processRemoveDoodleOfUsers = function (user_ids, doodle_id, key, callback) {
-
-	if ( key < user_ids.length ) {
-		var user_id = user_ids[key];
-
-		var query = "DELETE FROM Doodle.doodles_by_user WHERE user_id = ? AND doodle_id = ?";
-		doodle.db.execute(query, [ user_id, doodle_id ], { prepare : true }, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
-
-			key++;
-			doodle._processRemoveDoodleOfUsers(user_ids, doodle_id, key, callback);
-		});
-	}
-	else {
-		return callback(null, true);
-	}
-};
 
 /**
 *	Recursive function to get all the doodles from an array of ids
@@ -1779,30 +1800,6 @@ doodle.__processDeleteVoteOnUserFromSchedule = function (id, schedule_id, user_i
 			doodle.__processDeleteVoteOnUserFromSchedule(id, schedule_id, user_ids, key, callback);
 		});
 
-	}
-	else {
-		return callback(null, true);
-	}
-};
-
-/**
-*	Recursive function to delete all the schedules from an array of ids
-**/
-doodle.__processDeleteSchedulesFromIds = function (schedule_ids, key, callback) {
-
-	if ( schedule_ids.length != key ) {
-
-		var schedule_id = schedule_ids[key];
-
-		var query = 'DELETE FROM Doodle.schedule WHERE id = ?';
-		doodle.db.execute(query, [ schedule_id ], { prepare : true }, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
-
-			key++;
-			doodle.__processDeleteSchedulesFromIds(schedule_ids, key, callback);
-		});
 	}
 	else {
 		return callback(null, true);

@@ -67,5 +67,10 @@
 	"Your last name": "Your last name",
 	"New vote": "New vote",
 	"Schedule": "Schedule",
-	"Vote": "Vote"
+	"Vote": "Vote",
+	"Request deleted ! ": "Request deleted ! ",
+	"An error occured : The user does not have access to the doodle": "An error occured : The user does not have access to the doodle",
+	"User added !,You are accessing this doodle without being logged in": "User added !,You are accessing this doodle without being logged in",
+	"An error occured : ResponseError: Undefined name admin_statut in selection clause": "An error occured : ResponseError: Undefined name admin_statut in selection clause",
+	"Doodle deleted !": "Doodle deleted !"
 }

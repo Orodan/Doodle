@@ -52,7 +52,7 @@
         <!-- DOODLE DATA -->
         <% if (doodle) { %>
             <div class="col-md-12 jumbotron table-responsive horiz-scroll">
-                <table class="table table-condensed">
+                <table class="table table-condensed table-hover">
                     <thead>
                         <tr>
                             <th></th>
@@ -79,13 +79,13 @@
                                 <td class="vert-align" scope="row"><%= doodle.users[key].first_name %> <%= doodle.users[key].last_name %></td>
                                 <% for ( var key2 in doodle.users[key].votes ) { %>
                                     <% if ( doodle.users[key].votes[key2].vote == -1 ) { %>
-                                        <td colspan=2 class="smal"><div class="alert alert-danger vert-align"><span class="fa fa-frown-o"></span> <%= __('Not available') %></div></td>
+                                        <td colspan=2 class="smal"><div class="alert alert-danger vert-align text-center"><span class="fa fa-frown-o"></span> <%= __('Not available') %></div></td>
                                     <% } %>
                                     <% if ( doodle.users[key].votes[key2].vote == 0 ) { %>
-                                        <td colspan=2 class="smal"><div class="alert alert-warning vert-align"><span class="fa fa-meh-o"></span> <%= __('Do not know') %></div></td>
+                                        <td colspan=2 class="smal"><div class="alert alert-warning vert-align text-center"><span class="fa fa-meh-o"></span> <%= __('Do not know') %></div></td>
                                     <% } %>
                                     <% if ( doodle.users[key].votes[key2].vote == 1 ) { %>
-                                        <td colspan=2 class="smal"><div class="alert alert-success vert-align"><span class="fa fa-smile-o"></span> <%= __('Available') %></div></td>
+                                        <td colspan=2 class="smal"><div class="alert alert-success vert-align text-center"><span class="fa fa-smile-o"></span> <%= __('Available') %></div></td>
                                     <% } %>
                                 <% } %>
                             </tr>
@@ -97,8 +97,7 @@
 
         <!-- PARTICIPATION REQUESTS -->
         <% if ( typeof doodle.participation_requests != 'undefined' && doodle.participation_requests.length > 0 ) { %>
-            <div class="col-md-8">
-                <div class="alert alert-info">
+            <div class="col-md-6 col-md-offset-3 alert alert-info" role="alert">
                     <ul>
                     <% for ( var key in doodle.participation_requests ) { %>
                         <li>
@@ -106,7 +105,6 @@
                         </li>
                     <% } %>
                     </ul>
-                </div>
             </div>
         <% } %>
 

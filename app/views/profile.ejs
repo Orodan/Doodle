@@ -26,26 +26,8 @@
             </div>
         <% } %>
 
-        <!-- USER INFORMATIONS -->
-        <div class="col-sm-6">
-            <div class="well">
-                <h3><span class="fa fa-user"></span> <% __('Informations') %></h3>
-
-                    <% if (user) { %>
-                        <p>
-                            <% for (var key in user ) { %>
-                                <% if (typeof user[key] != 'function' ) { %>
-                                    <strong><%= key %></strong>: <%= user[key] %><br>
-                                <% } %>
-                            <% } %>
-                        </p>
-                    <% } %>
-
-            </div>
-        </div>
-
         <!-- DOODLES INFORMATIONS -->
-         <div class="col-sm-6">
+        <div class="col-sm-6">
             <div class="well">
                 <h3><span class="fa fa-archive"></span> <%= __('My doodles') %></h3>
                     <% if (doodles) { %>
@@ -66,6 +48,23 @@
                     <% } %>
                 <br>
                 <a href="/new-doodle" class="btn btn-default btn-sm"><%= __('Create doodle') %></a>
+            </div>
+        </div>
+
+        <!-- USER INFORMATIONS -->
+        <div class="col-sm-6">
+            <div class="well">
+                <h3><span class="fa fa-user"></span> <% __('Informations') %></h3>
+
+                    <% if (user) { %>
+                        <p>
+                            <% for (var key in user ) { %>
+                                <% if (typeof user[key] != 'function' ) { %>
+                                    <strong><%= key %></strong>: <%= user[key] %><br>
+                                <% } %>
+                            <% } %>
+                        </p>
+                    <% } %>
             </div>
         </div>
 
@@ -92,6 +91,7 @@
                 <% } %>
             </div>
         </div>
+    </div>
 
     </div>
 
