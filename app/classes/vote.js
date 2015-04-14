@@ -1,9 +1,37 @@
+// Dependencies -----------------------------------------------
 var async = require('async');
 
-var default_vote = 0;
+/**
+*	Constructor
+**/
+function vote (doodle_id, user_id, schedule_id, vote_value) {
 
+	this.doodle_id = doodle_id;
+	this.user_id = user_id;
+	this.schedule_id = schedule_id;
+	this.vote_value = vote_value;
+}
 
-function vote () {}
+/**
+*	Save the vote in db
+**/
+vote.prototype.save = function (callback) {
+
+	var queries = [
+		{
+			query: 'INSERT INTO votes_by_user (doodle_id, user_id, schedule_id, vote) values (?, ?, ?, ?)',
+			params: [ this.doodle_id, this.user_id, this.schedule_id, Number(this.vote_value) ]
+		},
+		{
+			query: 'INSERT INTO votes_by_schedule (doodle_id, schedule_id, user_id, vote) values (?, ?, ?, ?)',
+			params: [ this.doodle_id, this.schedule_id, this.user_id, Number(this.vote_value) ]
+		}
+	];
+
+	vote.db.batch(queries, { prepare : true }, function (err) {
+		return callback(err);
+	});
+};
 
 /**
 *	Get all the votes of the doodle about the user

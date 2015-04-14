@@ -4,6 +4,7 @@ var async = require('async');
 var Schedule = require('./schedule');
 var User = require('./user');
 var Vote = require('./vote');
+var Notification = require('./notification');
 
 // FUNCTIONS ===============================================================
 
@@ -592,11 +593,8 @@ doodle.saveVotes = function (doodle_id, user_id, params, callback) {
 /**
 *	Save a vote associated with the doodle, the user and the schedule 
 **/
-doodle.saveVote = function (doodle_id, user_id, params, callback) {
-
-	var schedule_id = params.schedule;
-	var vote = params.vote;
-
+doodle.saveVote = function (doodle_id, user_id, schedule_id, vote_value, callback) {
+	
 	// Save the vote ( Table votes_by_user )
 	var query = "INSERT INTO Doodle.votes_by_user (doodle_id, user_id, schedule_id, vote) values (?, ?, ?, ?)";
 	doodle.db.execute(query, [ doodle_id, user_id, schedule_id, Number(vote) ], { prepare : true }, function (err, result) {

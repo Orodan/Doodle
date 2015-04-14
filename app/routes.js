@@ -2,6 +2,7 @@
 var Doodle = require('./classes/doodle');
 var privateDoodle = require('./classes/privateDoodle');
 var User = require('./classes/user');
+var Vote = require('./classes/vote');
 var PublicUser = require('./classes/publicUser');
 var async = require('async');
 
@@ -489,9 +490,13 @@ module.exports = function (app, passport) {
     // Process doodle add-vote form
     app.post('/doodle/:id/add-vote', isLoggedIn, function (req, res) {
 
-        var id = req.params.id;
+        var doodle_id = req.params.id;
+        var user_id = req.user.id;
+        var schedule_id = req.body.schedule;
+        var vote_value = req.body.vote;
 
-        Doodle.saveVote(req.params.id, req.user.id, req.body, function (err, result) {
+        var vote = new Vote(doodle_id, user_id, schedule_id, vote_value);
+        vote.save(function (err) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
             }
@@ -499,7 +504,7 @@ module.exports = function (app, passport) {
                 req.flash('message', 'Vote taken !');
             }
 
-            res.redirect('/doodle/'+id);
+            res.redirect('/doodle/' + doodle_id);
         });
     });
 

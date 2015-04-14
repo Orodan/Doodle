@@ -18,7 +18,6 @@
     </div>
 
     <div class="row">
-
         <!-- ALERT MESSAGE -->
         <% if (message && message.length > 0) { %>
             <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
@@ -26,8 +25,8 @@
             </div>
         <% } %>
 
-        <!-- DOODLES INFORMATIONS -->
-        <div class="col-sm-6">
+        <div class="col-md-6">
+            <!-- DOODLES INFORMATIONS -->
             <div class="well">
                 <h3><span class="fa fa-archive"></span> <%= __('My doodles') %></h3>
                     <% if (doodles) { %>
@@ -49,27 +48,8 @@
                 <br>
                 <a href="/new-doodle" class="btn btn-default btn-sm"><%= __('Create doodle') %></a>
             </div>
-        </div>
 
-        <!-- USER INFORMATIONS -->
-        <div class="col-sm-6">
-            <div class="well">
-                <h3><span class="fa fa-user"></span> <% __('Informations') %></h3>
-
-                    <% if (user) { %>
-                        <p>
-                            <% for (var key in user ) { %>
-                                <% if (typeof user[key] != 'function' ) { %>
-                                    <strong><%= key %></strong>: <%= user[key] %><br>
-                                <% } %>
-                            <% } %>
-                        </p>
-                    <% } %>
-            </div>
-        </div>
-
-        <!-- PARTICIPATION REQUESTS -->
-        <div class="col-sm-6">  
+            <!-- PARTICIPATION REQUESTS -->
             <div class="well">
                 <h3><span class="fa fa-question"></span> <%= __('Participation requests') %></h3>
                 <% if ( participation_requests != null && participation_requests.length > 0 ) { %>
@@ -91,8 +71,23 @@
                 <% } %>
             </div>
         </div>
-    </div>
 
+        <!-- USER INFORMATIONS -->
+        <div class="col-md-6">
+            <div class="well">
+                <h3><span class="fa fa-user"></span> <% __('Informations') %></h3>
+
+                    <% if (user) { %>
+                        <p>
+                            <% for (var key in user ) { %>
+                                <% if (typeof user[key] != 'function' ) { %>
+                                    <strong><%= key %></strong>: <%= user[key] %><br>
+                                <% } %>
+                            <% } %>
+                        </p>
+                    <% } %>
+            </div>
+        </div>
     </div>
 
 </div>
