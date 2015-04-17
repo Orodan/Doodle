@@ -5,6 +5,7 @@ var Schedule = require('./schedule');
 var User = require('./user');
 var Vote = require('./vote');
 var Notification = require('./notification');
+var Configuration = require('./configuration');
 
 // FUNCTIONS ===============================================================
 
@@ -46,13 +47,8 @@ function doodle (name, description, user_id, callback) {
 doodle.prototype.save = function (callback) {
 
 	var query = 'INSERT INTO doodle (id, name, description) values (?, ?, ?)';
-
-	doodle.db.execute(query, [ this.id, this.name, this.description ], { prepare : true }, function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		return callback(null, result);
+	doodle.db.execute(query, [ this.id, this.name, this.description ], { prepare : true }, function (err) {
+		return callback(err);
 	});
 };
 
@@ -864,6 +860,11 @@ doodle.addUser = function (id, user_id, callback) {
 		// For each schedule of the doodle, we add a new undecided votes to the new user
 		function _addDefaultVotesToUser (done) {
 			doodle.addDefaultVotesToUser(id, user_id, done);
+		},
+		// Create a user configuration for this doodle
+		function _addConfiguration (done) {
+			var config = new Configuration(user_id, id);
+			config.save(done);
 		},
 		function _deleteParticipationRequest (done) {
 			

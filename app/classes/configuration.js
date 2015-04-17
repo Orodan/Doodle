@@ -1,6 +1,9 @@
 // Dependencies -----------------------------------------------
 var async = require('async');
 
+var default_notification = false;
+var default_notification_by_email = false;
+
 /**
 *	Constructor
 **/
@@ -8,8 +11,10 @@ function configuration (user_id, doodle_id, notification, notification_by_email)
 
 	this.user_id = user_id;
 	this.doodle_id = doodle_id;
-	this.notification = notification;
-	this.notification_by_email = notification_by_email;
+
+	(notification) ? this.notification = notification : this.notification = default_notification;
+	(notification_by_email) ? this.notification_by_email = notification_by_email : this.notification_by_email = default_notification_by_email;
+
 }
 
 /**
@@ -22,6 +27,7 @@ configuration.prototype.save = function (callback) {
 		return callback(err);
 	});
 };
+
 
 /**
 *	Get the configuration

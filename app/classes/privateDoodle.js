@@ -1,26 +1,34 @@
-var doodle = require('./doodle'),
-	util = require('util'),
-	async = require('async');
+// Dependencies ------------------------------------------
+var Doodle = require('./doodle');
+var Configuration = require('./configuration');
+var util = require('util');
+var async = require('async');
 
-
+/**
+*	Constructor
+**/
 function privateDoodle (name, description) {
 
-	doodle.call(this, name, description);
-
+	Doodle.call(this, name, description);
 }
 
-util.inherits(privateDoodle, doodle);
+// Héritage de Doodle
+util.inherits(privateDoodle, Doodle);
 
+/**
+*	Save a private doodle in db
+**/
 privateDoodle.prototype.save = function (user_id, callback) {
 
 	async.series([
+		// Save the doodle itself in db
 		function saveDoodle (done) {
 			privateDoodle.super_.prototype.save.call(this, done);
 		}.bind(this),
 
+		// Associate user-doodle and doodle-user
 		function associateDoodleUser (done) {
 
-			// We associate user-doodle and doodle-user
 			var queries = [
 				{
 					query : 'INSERT INTO users_by_doodle (doodle_id, user_id, admin_statut) values (?, ?, ?)',
@@ -33,21 +41,22 @@ privateDoodle.prototype.save = function (user_id, callback) {
 			];
 
 			privateDoodle.super_.db.batch(queries, { prepare : true }, function (err, result) {
-				if (err) {
-					return done(err);
-				}
+				return done(err);
+			});
+		}.bind(this),
 
-				return done(null, result);
+		// Create a new configuration about the user who just created the doodle and the doodle
+		function _createConfiguration (done) {
+
+			var config = new Configuration(user_id, this.id);
+			config.save(function (err) {
+				return done(err);
 			});
 		}.bind(this)
 
 
-	], function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		return callback(null, true);
+	], function (err) {
+		return callback(err);
 	});
 };
 
