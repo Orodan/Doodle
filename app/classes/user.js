@@ -4,7 +4,9 @@ var uuid = require('node-uuid');
 var Global = require('./global');
 var async = require('async');
 var Vote = require('./vote');
+var Configuration = require('./configuration');
 
+var default_configuration_notification = true;
 
 /**
 *	Constructor
@@ -31,6 +33,61 @@ user.prototype.save = function (callback) {
 	});
 };
 
+/**
+*	Get the configurations of the user (for all the doodle he is associated with)
+**/
+user.getConfigurations = function (user_id, callback) {
+
+	async.waterfall([
+		function _getDoodleIdsFromUser (done) {
+
+			user.getDoodleIdsFromUser(user_id, function (err, result) {
+				return done(err, result);
+			});
+		}, 
+		function _getConfigurationForEachDoodle (doodle_ids, done) {
+
+			async.each(doodle_ids, function _getConfiguration (doodle_id, finish) {
+				User.getConfiguration(user_id, doodle_id, finish);
+			});
+		}
+	], function (err, result) {
+		return callback(err, result);
+	});
+};
+
+/**
+*	Get the configuration of the user about that doodle
+**/
+user.getConfiguration = function (user_id, doodle_id, callback) {
+
+	async.waterfall([
+		function _getConfigurationId (done) {
+
+			var query = 'SELECT configuration_id FROM configuration_by_user_and_doodle WHERE user_id = ? AND doodle_id = ?';
+			user.db.execute(query, [ user_id, doodle_id ], { prepare : true }, function (err, result) {
+				if (err || result.rows.length === 0) {
+					return callback (err);
+				}
+
+				return done(null, result.rows[0].configuration_id);
+			});
+		},
+		function _getCconfigurationFromId (configuration_id, done) {
+
+			Configuration.get(configuration_id, function (err, result) {
+				return done(err, result);
+			});
+		}
+	], function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, result);
+	});
+};
+	
 /**
 *	Get the participation requests associated with that user
 **/

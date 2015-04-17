@@ -3,7 +3,9 @@ var Doodle = require('./classes/doodle');
 var privateDoodle = require('./classes/privateDoodle');
 var User = require('./classes/user');
 var Vote = require('./classes/vote');
+var Notification = require('./classes/notification');
 var PublicUser = require('./classes/publicUser');
+var Configuration = require('./classes/configuration');
 var async = require('async');
 
 module.exports = function (app, passport) {
@@ -23,8 +25,6 @@ module.exports = function (app, passport) {
             language : req.cookies.mylanguage
         });
     });
-
-
 
     // =====================================
     // LOGIN ===============================
@@ -111,7 +111,76 @@ module.exports = function (app, passport) {
     	res.redirect('/');
     });
 
+    // =====================================
+    // CONFIGURATION =======================
+    // =====================================
+    app.get('/configuration', isLoggedIn, function (req, res) {
 
+        async.waterfall([
+            function _getDoodlesFromUser (done) {
+                Doodle.getDoodlesFromUser(req.user.id, function (err, doodles) {
+                    return done(err, doodles);
+                });
+            },
+            function _getConfigurations (doodles, done) {
+
+                async.each(doodles, function (doodle, finish) {
+                    User.getConfiguration(req.user.id, doodle.id, function (err, notification) {
+
+                        doodle.notification = notification;
+                        return finish(err);
+                    });
+                }, function (err) {
+                    return done(err, doodles);
+                });
+            }
+        ], function (err, doodles) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+            }
+
+            res.render('configuration', {
+                user: req.user,
+                message: req.flash('message'),
+                doodles: doodles
+            });
+        });
+    });
+
+    app.post('/configuration', isLoggedIn, function (req, res) {
+
+        // We transform the inputs in array, and add default values (false) to all the inputs
+        var data_arr = [];
+        var i = 0;
+        for (var key in req.body) {
+            data_arr[i] = { 'doodle_id': key, 'notification': false, 'notification_by_email': false};
+            for (var key2 in req.body[key]) {
+                data_arr[i][key2] = true;
+            }
+            i++;
+        }
+
+        async.each(data_arr, function _saveConfiguration (data, done) {
+
+            var config = new Configuration(req.user.id, data.doodle_id, data.notification, data.notification_by_email);
+            config.save(function (err) {
+                return done(err);
+            });
+
+        }, function (err) {
+
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+            }
+            else {
+                req.flash('message', 'Configuration saved');
+            }
+
+            res.redirect('/profile');
+        });
+
+        
+    });
 
     // ==========================================================================
     // PRIVATE DOODLE SECTION ===================================================
@@ -496,14 +565,31 @@ module.exports = function (app, passport) {
         var vote_value = req.body.vote;
 
         var vote = new Vote(doodle_id, user_id, schedule_id, vote_value);
-        vote.save(function (err) {
+        var notification = new Notification(user_id, doodle_id, schedule_id);
+
+        async.parallel([
+            function _saveVote(done) {
+                vote.save(function (err) {
+                    return done(err);
+                });        
+            },
+            function _saveNotification (done) {
+                notification.save(function (err) {
+                    return done(err);
+                });
+            },
+            function _diffuseNotification (done) {
+                doodle.difuseNotification(notification, function (err) {
+                    return done(err);
+                });
+            }
+        ], function (err) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
             }
             else {
                 req.flash('message', 'Vote taken !');
             }
-
             res.redirect('/doodle/' + doodle_id);
         });
     });

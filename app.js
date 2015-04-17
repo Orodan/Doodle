@@ -24,6 +24,8 @@ var user = require('./app/classes/user');
 var doodle = require('./app/classes/doodle');
 var schedule = require('./app/classes/schedule');
 var vote = require('./app/classes/vote');
+var notification = require('./app/classes/notification');
+var configuration = require('./app/classes/configuration');
 
 // Association model - database
 user.db = client;
@@ -36,6 +38,11 @@ schedule.db = client;
 schedule.uuid = cassandra.types.uuid;
 
 vote.db = client;
+
+notification.db = client;
+notification.timeuuid = cassandra.types.TimeUuid;
+
+configuration.db = client;
 
 require('./app/config/passport')(passport);
 

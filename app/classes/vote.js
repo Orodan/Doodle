@@ -1,6 +1,8 @@
 // Dependencies -----------------------------------------------
 var async = require('async');
 
+var default_vote = 0;
+
 /**
 *	Constructor
 **/

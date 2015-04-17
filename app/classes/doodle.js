@@ -591,30 +591,6 @@ doodle.saveVotes = function (doodle_id, user_id, params, callback) {
 };
 
 /**
-*	Save a vote associated with the doodle, the user and the schedule 
-**/
-doodle.saveVote = function (doodle_id, user_id, schedule_id, vote_value, callback) {
-	
-	// Save the vote ( Table votes_by_user )
-	var query = "INSERT INTO Doodle.votes_by_user (doodle_id, user_id, schedule_id, vote) values (?, ?, ?, ?)";
-	doodle.db.execute(query, [ doodle_id, user_id, schedule_id, Number(vote) ], { prepare : true }, function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		// Save the vote ( Table votes_by_schedule )
-		query = 'INSERT INTO Doodle.votes_by_schedule (doodle_id, schedule_id, user_id, vote) values (?, ?, ?, ?)';
-		doodle.db.execute(query, [ doodle_id, schedule_id, user_id, Number(vote) ], { prepare : true }, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
-
-			return callback(null, true);
-		});
-	});
-};
-
-/**
 *	Save many schedules to the doodle
 **/
 doodle.addSchedules = function (id, params, callback) {

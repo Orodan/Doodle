@@ -62,5 +62,8 @@
 	"Create a new account": "Créer un nouveau compte",
 	"last name": "Nom",
 	"first name": "Prénom",
-	"Not available": "Not available"
+	"Not available": "Not available",
+	"Configuration": "Configuration",
+	"Receive notification": "Receive notification",
+	"Receive notification by email": "Receive notification by email"
 }

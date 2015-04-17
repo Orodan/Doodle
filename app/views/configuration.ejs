@@ -1,0 +1,61 @@
+<!-- views/index.ejs -->
+<!doctype html>
+<html>
+<head>
+    <title>Doodle</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css"> <!-- load bootstrap css -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css"> <!-- load fontawesome -->
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body        { padding-top:80px; }
+        .footer { position: absolute; bottom: 0; height: 60px; }
+    </style>
+</head>
+<body>
+<div class="container configuration">
+	<div class="page-header text-center">
+        <h1><span class="fa fa-bolt"></span> <%= __('Configuration') %></h1>
+    </div>
+
+	<% if (doodles) { %>
+		<form action="#" method="post">
+            <% for(var key in doodles) { %>
+            	<div class="col-md-6">
+		            <div class="well">
+		                <div class="form-group">
+	                		<strong><%= doodles[key].name %></strong><br>
+	                		<%= doodles[key].description %><br>
+	                		<input type="hidden" name="<%= doodles[key].id %>" />
+	                		<div class="checkbox">
+	                    		<label>
+		                        	<%= __('Receive notification'); %>
+		                        	<% if (doodles[key].notification == true) { %>
+		                        		<input class="checkbox" type="checkbox" name="<%= doodles[key].id %>[notification]" value="true" checked />
+		                        	<% } else { %>
+		                        		<input class="checkbox" type="checkbox" name="<%= doodles[key].id %>[notification]" value="true" />
+		                        	<% } %>
+		                        </label>
+	                    	</div>
+	                    	<div class="checkbox">
+	                    		<label>
+		                        	<%= __('Receive notification by email'); %>
+		                        	<% if (doodles[key].notification_by_email == true) { %>
+		                        		<input class="checkbox" type="checkbox" name="<%= doodles[key].id %>[notification_by_email]" value="true" checked />
+		                        	<% } else { %>
+		                        		<input class="checkbox" type="checkbox" name="<%= doodles[key].id %>[notification_by_email]" value="true" />
+		                        	<% } %>
+		                        </label>
+	                    	</div>
+	                    </div>
+		            </div>
+		        </div>
+            <% } %>
+
+            <a class="btn btn-danger text-right pull-right" href="/profile">Cancel</a>
+            <button type="submit" class="btn btn-success pull-right">Save</button>
+            
+        </form>
+    <% } %>
+</div>
+</body>
+</html>
