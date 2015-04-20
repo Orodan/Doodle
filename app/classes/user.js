@@ -61,30 +61,13 @@ user.getConfigurations = function (user_id, callback) {
 **/
 user.getConfiguration = function (user_id, doodle_id, callback) {
 
-	async.waterfall([
-		function _getConfigurationId (done) {
-
-			var query = 'SELECT configuration_id FROM configuration_by_user_and_doodle WHERE user_id = ? AND doodle_id = ?';
-			user.db.execute(query, [ user_id, doodle_id ], { prepare : true }, function (err, result) {
-				if (err || result.rows.length === 0) {
-					return callback (err);
-				}
-
-				return done(null, result.rows[0].configuration_id);
-			});
-		},
-		function _getCconfigurationFromId (configuration_id, done) {
-
-			Configuration.get(configuration_id, function (err, result) {
-				return done(err, result);
-			});
-		}
-	], function (err, result) {
-		if (err) {
+	var query = 'SELECT notification, notification_by_email FROM configuration_by_user_and_doodle WHERE user_id = ? AND doodle_id = ?';
+	user.db.execute(query, [ user_id, doodle_id ], { prepare : true }, function (err, result) {
+		if (err || result.rows.length === 0) {
 			return callback(err);
 		}
 
-		return callback(null, result);
+		return callback(null, result.rows[0]);
 	});
 };
 	

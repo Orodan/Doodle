@@ -78,5 +78,7 @@
 	"Receive notification": "Receive notification",
 	"Receive notification by email": "Receive notification by email",
 	"An error occured : ResponseError: Unmatched column names/values": "An error occured : ResponseError: Unmatched column names/values",
-	"Configuration saved": "Configuration saved"
+	"Configuration saved": "Configuration saved",
+	"An error occured : ResponseError: Invalid null value for partition key part doodle_id": "An error occured : ResponseError: Invalid null value for partition key part doodle_id",
+	"An error occured : ResponseError: Invalid null value for partition key part notification_id": "An error occured : ResponseError: Invalid null value for partition key part notification_id"
 }

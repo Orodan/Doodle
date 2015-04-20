@@ -125,9 +125,13 @@ module.exports = function (app, passport) {
             function _getConfigurations (doodles, done) {
 
                 async.each(doodles, function (doodle, finish) {
-                    User.getConfiguration(req.user.id, doodle.id, function (err, notification) {
+                    User.getConfiguration(req.user.id, doodle.id, function (err, result) {
 
-                        doodle.notification = notification;
+                        if (result) {
+                            doodle.notification = result.notification;
+                            doodle.notification_by_email = result.notification_by_email;   
+                        }
+
                         return finish(err);
                     });
                 }, function (err) {
@@ -575,11 +579,6 @@ module.exports = function (app, passport) {
             },
             function _saveNotification (done) {
                 notification.save(function (err) {
-                    return done(err);
-                });
-            },
-            function _diffuseNotification (done) {
-                doodle.difuseNotification(notification, function (err) {
                     return done(err);
                 });
             }

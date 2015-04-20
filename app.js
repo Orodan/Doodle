@@ -40,7 +40,7 @@ schedule.uuid = cassandra.types.uuid;
 vote.db = client;
 
 notification.db = client;
-notification.timeuuid = cassandra.types.TimeUuid;
+notification.timeuuid = cassandra.types.timeuuid;
 
 configuration.db = client;
 
