@@ -39,5 +39,4 @@ jQuery(function($) {
 		$('#notifications-content').toggleClass('hidden');
 	});
 
-
 });

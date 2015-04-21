@@ -25,3 +25,22 @@ thead>tr>th{
 	width: 80px;
 	margin: 15px;
 }
+
+/** Notification **/
+
+.badge {
+	position: absolute;
+}
+
+.notifications-content {
+	position: absolute;
+	z-index: 999;
+
+	max-height: 430px;
+	overflow-y: auto;
+}
+
+.notifications-content .badge {
+	background-color: #428bca;
+}
+

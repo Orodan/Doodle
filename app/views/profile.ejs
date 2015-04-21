@@ -16,30 +16,33 @@
         <!-- NOTIFICATION MESSAGE -->
         <% if (notifications && notifications.length > 0) { %>
             <div class="col-md-6" id="notifications">
-                <% var notification_not_read = false; %> 
+                <% var notifications_not_read = 0; %> 
                 <% for ( var key in notifications ) { %>
                     <% if ( notifications[key].is_read === false ) { %>
-                        <% notification_not_read = true; %>
+                        <% notifications_not_read++; %>
                     <% } %>
                 <% } %>
 
                 <!-- Different icon according if there is a notification to read or not -->
-                <% if (notification_not_read) { %>
-                    <a href="#" id="notifications-button"><span class="fa fa-envelope fa-2x"></span></a><br/>
+                <% if (notifications_not_read > 0) { %>
+                    <a href="#" id="notifications-button"><span class="fa fa-envelope fa-2x"></span><span class="badge"><%= notifications_not_read %></span></a><br/>
                 <% } else { %>
                     <a href="#" id="notifications-button"><span class="fa fa-envelope-o fa-2x"></span></a><br/>
                 <% } %>
 
                 <!-- notifications -->
-                <div class="well hidden" id="notifications-content">
+                <div class="well hidden notifications-content" id="notifications-content">
                 <% for (var key in notifications ) { %>
+                    <% if (notifications[key].is_read === false) { %>
+                        <span class="badge">New</span><br/>
+                    <% } %>
+
                     <%= notifications[key].notification_id %><br/>
                     <%= notifications[key].user.first_name + ' ' + notifications[key].user.last_name %>
                     <%= __('has modify his/her vote about the following schedule : '); %>
                     <%= notifications[key].schedule.begin_date + ' to ' + notifications[key].schedule.end_date %>
                     <%= __('on the doodle '); %>
                     <%= notifications[key].doodle.name; %>
-                    <br/>
                     <hr/> 
                 <% } %>
                 </div>
