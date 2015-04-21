@@ -80,5 +80,11 @@
 	"An error occured : ResponseError: Unmatched column names/values": "An error occured : ResponseError: Unmatched column names/values",
 	"Configuration saved": "Configuration saved",
 	"An error occured : ResponseError: Invalid null value for partition key part doodle_id": "An error occured : ResponseError: Invalid null value for partition key part doodle_id",
-	"An error occured : ResponseError: Invalid null value for partition key part notification_id": "An error occured : ResponseError: Invalid null value for partition key part notification_id"
+	"An error occured : ResponseError: Invalid null value for partition key part notification_id": "An error occured : ResponseError: Invalid null value for partition key part notification_id",
+	"An error occured : ResponseError: Invalid null value for clustering key part notification_id": "An error occured : ResponseError: Invalid null value for clustering key part notification_id",
+	"[object Object],[object Object],[object Object]": "[object Object],[object Object],[object Object]",
+	"Welcome !,An error occured : ResponseError: line 1:24 missing EOF at 'FROM'": "Welcome !,An error occured : ResponseError: line 1:24 missing EOF at 'FROM'",
+	"An error occured : ResponseError: line 1:24 missing EOF at 'FROM'": "An error occured : ResponseError: line 1:24 missing EOF at 'FROM'",
+	"has modify his/her vote about the following schedule : ": "has modify his/her vote about the following schedule : ",
+	"on the doodle ": "on the doodle "
 }

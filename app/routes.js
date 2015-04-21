@@ -86,6 +86,15 @@ module.exports = function (app, passport) {
 
                     return done(null, result);
                 });
+            },
+            notifications : function _getNotifications (done) {
+                User.getNotifications(req.user.id, function (err, result) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    return done(null, result);
+                });
             }
         }, function (err, results) {
 
@@ -93,11 +102,14 @@ module.exports = function (app, passport) {
                 req.flash('message', 'An error occured : ' + err);
             }
 
+            console.log("NOTIFICATIONS : ", results.notifications);
+
             res.render('profile', {
                 user : req.user,
                 message : req.flash('message'),
                 doodles : results.doodles,
-                participation_requests: results.participation_requests
+                participation_requests: results.participation_requests,
+                notifications: results.notifications
             });            
         });
     });

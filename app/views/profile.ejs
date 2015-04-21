@@ -5,22 +5,56 @@
     <title>Doodle</title>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/style.css">
     <style>
         body        { padding-top:80px; word-wrap:break-word; }
     </style>
 </head>
 <body>
 <div class="container">
+    <div class="row">
+        <!-- NOTIFICATION MESSAGE -->
+        <% if (notifications && notifications.length > 0) { %>
+            <div class="notifications">
+                <% var notification_not_read = false; %> 
+                <% for ( var key in notifications ) { %>
+                    <% if ( notifications[key].is_read === false ) { %>
+                        <% notification_not_read = true; %>
+                    <% } %>
+                <% } %>
 
-    <div class="page-header text-center">
-        <h1><span class="fa fa-anchor"></span> <%= __('Profile Page') %></h1>
-        <a href="/logout" class="btn btn-default btn-sm"><%= __('Logout') %></a>
+                <!-- Different icon according if there is a notification to read or not -->
+                <% if (notification_not_read) { %>
+                    <a href="#"><span class="fa fa-envelope fa-2x"></span></a><br/>
+                <% } else { %>
+                    <a href="#"><span class="fa fa-envelope-o fa-2x"></span></a><br/>
+                <% } %>
+
+                <!-- notifications -->
+                <div class="panel panel-info">
+                <% for (var key in notifications ) { %>
+                    <div class="panel-heading">
+                        <%= notifications[key].user.first_name + ' ' + notifications[key].user.last_name %>
+                        <%= __('has modify his/her vote about the following schedule : '); %>
+                        <%= notifications[key].schedule.begin_date + ' to ' + notifications[key].schedule.end_date %>
+                        <%= __('on the doodle '); %>
+                        <%= notifications[key].doodle.name; %>
+                        <br/>
+                    </div>
+                <% } %>
+                </div>
+            </div>
+        <% } %>
+        <div class="page-header text-center">
+            <h1><span class="fa fa-anchor"></span> <%= __('Profile Page') %></h1>
+            <a href="/logout" class="btn btn-default btn-sm"><%= __('Logout') %></a>
+        </div>
     </div>
 
     <div class="row">
         <!-- ALERT MESSAGE -->
         <% if (message && message.length > 0) { %>
-            <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
+            <div class="col-md-6 col-md-offset-3 alert alert-info" role="alert">
                 <%= __('' + message + '') %>
             </div>
         <% } %>

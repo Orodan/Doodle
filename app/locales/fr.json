@@ -65,5 +65,9 @@
 	"Not available": "Not available",
 	"Configuration": "Configuration",
 	"Receive notification": "Receive notification",
-	"Receive notification by email": "Receive notification by email"
+	"Receive notification by email": "Receive notification by email",
+	"An error occured : ResponseError: line 1:24 missing EOF at 'FROM'": "An error occured : ResponseError: line 1:24 missing EOF at 'FROM'",
+	"[object Object],[object Object],[object Object]": "[object Object],[object Object],[object Object]",
+	"has modify his/her vote about the following schedule : ": "has modify his/her vote about the following schedule : ",
+	"on the doodle ": "on the doodle "
 }

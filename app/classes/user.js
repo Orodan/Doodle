@@ -5,6 +5,7 @@ var Global = require('./global');
 var async = require('async');
 var Vote = require('./vote');
 var Configuration = require('./configuration');
+var Notification = require('./notification');
 
 var default_configuration_notification = true;
 
@@ -30,6 +31,23 @@ user.prototype.save = function (callback) {
 		}
 
 		return callback(null, result);
+	});
+};
+
+/**
+*	Get the notifications of the user
+**/
+user.getNotifications = function (user_id, callback) {
+
+	async.waterfall([
+		function _getNotificationIdsFromUser (done) {
+			Notification.getNotificationIdsFromUser(user_id, done);
+		},
+		function _getNotifications (notification_ids, done) {
+			Notification.getAll(notification_ids, done);
+		}
+	], function (err, result) {
+		return callback(err, result);
 	});
 };
 
