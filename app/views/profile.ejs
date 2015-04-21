@@ -15,7 +15,7 @@
     <div class="row">
         <!-- NOTIFICATION MESSAGE -->
         <% if (notifications && notifications.length > 0) { %>
-            <div class="notifications">
+            <div class="col-md-6" id="notifications">
                 <% var notification_not_read = false; %> 
                 <% for ( var key in notifications ) { %>
                     <% if ( notifications[key].is_read === false ) { %>
@@ -25,26 +25,28 @@
 
                 <!-- Different icon according if there is a notification to read or not -->
                 <% if (notification_not_read) { %>
-                    <a href="#"><span class="fa fa-envelope fa-2x"></span></a><br/>
+                    <a href="#" id="notifications-button"><span class="fa fa-envelope fa-2x"></span></a><br/>
                 <% } else { %>
-                    <a href="#"><span class="fa fa-envelope-o fa-2x"></span></a><br/>
+                    <a href="#" id="notifications-button"><span class="fa fa-envelope-o fa-2x"></span></a><br/>
                 <% } %>
 
                 <!-- notifications -->
-                <div class="panel panel-info">
+                <div class="well hidden" id="notifications-content">
                 <% for (var key in notifications ) { %>
-                    <div class="panel-heading">
-                        <%= notifications[key].user.first_name + ' ' + notifications[key].user.last_name %>
-                        <%= __('has modify his/her vote about the following schedule : '); %>
-                        <%= notifications[key].schedule.begin_date + ' to ' + notifications[key].schedule.end_date %>
-                        <%= __('on the doodle '); %>
-                        <%= notifications[key].doodle.name; %>
-                        <br/>
-                    </div>
+                    <%= notifications[key].notification_id %><br/>
+                    <%= notifications[key].user.first_name + ' ' + notifications[key].user.last_name %>
+                    <%= __('has modify his/her vote about the following schedule : '); %>
+                    <%= notifications[key].schedule.begin_date + ' to ' + notifications[key].schedule.end_date %>
+                    <%= __('on the doodle '); %>
+                    <%= notifications[key].doodle.name; %>
+                    <br/>
+                    <hr/> 
                 <% } %>
                 </div>
             </div>
         <% } %>
+    </div>
+    <div class="row">
         <div class="page-header text-center">
             <h1><span class="fa fa-anchor"></span> <%= __('Profile Page') %></h1>
             <a href="/logout" class="btn btn-default btn-sm"><%= __('Logout') %></a>
@@ -124,7 +126,15 @@
             </div>
         </div>
     </div>
-
 </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<!-- <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script> -->
+<script type="text/javascript" src="/js/script.js"></script>
+
+<script>
+  var myVar = <%- JSON.stringify(notifications) %>;
+  console.log(myVar);
+</script>
 </body>
 </html>

@@ -2,7 +2,7 @@ jQuery(function($) {
 
 	var nbInputs = 1;
 
-	$('#add-schedule').click(function(e) {
+	$('#add-schedule').click(function (e) {
 		// Stock the redirection
 		e.preventDefault();
 
@@ -27,5 +27,17 @@ jQuery(function($) {
         $('#public-schedules').append(inputs);
 
 
-	})
+	});
+
+	/**************************\
+	****** NOTIFICATIONS *******
+	\**************************/
+
+	$('#notifications-button').click(function (e) {
+		e.preventDefault();
+
+		$('#notifications-content').toggleClass('hidden');
+	});
+
+
 });

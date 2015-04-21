@@ -102,8 +102,6 @@ module.exports = function (app, passport) {
                 req.flash('message', 'An error occured : ' + err);
             }
 
-            console.log("NOTIFICATIONS : ", results.notifications);
-
             res.render('profile', {
                 user : req.user,
                 message : req.flash('message'),
