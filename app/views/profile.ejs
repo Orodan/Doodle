@@ -15,36 +15,39 @@
     <div class="row">
         <!-- NOTIFICATION MESSAGE -->
         <% if (notifications && notifications.length > 0) { %>
-            <div class="col-md-6" id="notifications">
-                <% var notifications_not_read = 0; %> 
-                <% for ( var key in notifications ) { %>
-                    <% if ( notifications[key].is_read === false ) { %>
-                        <% notifications_not_read++; %>
-                    <% } %>
-                <% } %>
-
-                <!-- Different icon according if there is a notification to read or not -->
-                <% if (notifications_not_read > 0) { %>
-                    <a href="#" id="notifications-button"><span class="fa fa-envelope fa-2x"></span><span class="badge"><%= notifications_not_read %></span></a><br/>
-                <% } else { %>
-                    <a href="#" id="notifications-button"><span class="fa fa-envelope-o fa-2x"></span></a><br/>
-                <% } %>
-
-                <!-- notifications -->
-                <div class="well hidden notifications-content" id="notifications-content">
-                <% for (var key in notifications ) { %>
-                    <% if (notifications[key].is_read === false) { %>
-                        <span class="badge">New</span><br/>
+            <div id="notifications-box">
+                <div class="col-md-6" id="notifications">
+                    <% var notifications_not_read = 0; %> 
+                    <% for ( var key in notifications ) { %>
+                        <% if ( notifications[key].is_read === false ) { %>
+                            <% notifications_not_read++; %>
+                        <% } %>
                     <% } %>
 
-                    <%= notifications[key].notification_id %><br/>
-                    <%= notifications[key].user.first_name + ' ' + notifications[key].user.last_name %>
-                    <%= __('has modify his/her vote about the following schedule : '); %>
-                    <%= notifications[key].schedule.begin_date + ' to ' + notifications[key].schedule.end_date %>
-                    <%= __('on the doodle '); %>
-                    <%= notifications[key].doodle.name; %>
-                    <hr/> 
-                <% } %>
+                    <!-- Different icon according if there is a notification to read or not -->
+                    <% if (notifications_not_read > 0) { %>
+                        <a href="#" id="notifications-button"><span class="fa fa-envelope fa-2x"></span><span class="badge"><%= notifications_not_read %></span></a><br/>
+                    <% } else { %>
+                        <a href="#" id="notifications-button"><span class="fa fa-envelope-o fa-2x"></span></a><br/>
+                    <% } %>
+
+                    <!-- notifications -->
+                    <div class="well hidden notifications-content" id="notifications-content">
+                    <% for (var key in notifications ) { %>
+                        <div class="notification" data="<%= notifications[key].notification_id %>">
+                            <% if (notifications[key].is_read === false) { %>
+                                <span class="badge">New</span><br/>
+                            <% } %>
+
+                            <%= notifications[key].user.first_name + ' ' + notifications[key].user.last_name %>
+                            <%= __('has modify his/her vote about the following schedule : '); %>
+                            <%= notifications[key].schedule.begin_date + ' to ' + notifications[key].schedule.end_date %>
+                            <%= __('on the doodle '); %>
+                            <%= notifications[key].doodle.name; %>
+                        </div>
+                        <hr/> 
+                    <% } %>
+                    </div>
                 </div>
             </div>
         <% } %>
@@ -135,9 +138,5 @@
 <!-- <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script> -->
 <script type="text/javascript" src="/js/script.js"></script>
 
-<script>
-  var myVar = <%- JSON.stringify(notifications) %>;
-  console.log(myVar);
-</script>
 </body>
 </html>

@@ -102,6 +102,8 @@ module.exports = function (app, passport) {
                 req.flash('message', 'An error occured : ' + err);
             }
 
+            console.log('notifications : ', results.notifications);
+
             res.render('profile', {
                 user : req.user,
                 message : req.flash('message'),
@@ -192,15 +194,27 @@ module.exports = function (app, passport) {
 
             res.redirect('/profile');
         });
+    });
 
-        
+    // =====================================
+    // NOTIFICATION ========================
+    // =====================================
+    // AJAX call to define a notification read
+    app.put('/notification-read', isLoggedIn, function (req, res) {
+
+        Notification.isRead(req.user.id, req.body.notification_id, function (err, result) {
+            if (err) {
+                res.send('Error', 400, err);
+            }
+            else {
+                res.send('Success', 200);
+            }
+        });
     });
 
     // ==========================================================================
     // PRIVATE DOODLE SECTION ===================================================
     // ==========================================================================
-
-
 
     // =====================================
     // NEW PRIVATE DOODLE ==================

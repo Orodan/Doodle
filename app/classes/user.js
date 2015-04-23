@@ -45,8 +45,27 @@ user.getNotifications = function (user_id, callback) {
 		},
 		function _getNotifications (notification_ids, done) {
 			Notification.getAll(notification_ids, done);
+		},
+		function _isRead (notifications, done) {
+
+			// For each notification, we get if the user has already seen it or not
+			async.each(notifications, function (notification, finish) {
+				Notification.getIsRead(user_id, notification.notification_id, function (err, is_read) {
+					if (err) {
+						return finish (err);
+					}
+
+					notification.is_read = is_read;
+					return finish(null);
+				});
+			}, function (err) {
+				return done(err, notifications);
+			});
 		}
+
 	], function (err, result) {
+
+		console.log("notifications : ", result);
 		return callback(err, result);
 	});
 };

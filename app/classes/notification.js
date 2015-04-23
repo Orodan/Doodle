@@ -1,6 +1,6 @@
 // Dependencies ------------------------------------------------
 var async = require('async');
-
+var assert = require('assert');
 /**
 *	Constructor
 **/
@@ -55,11 +55,19 @@ notification.prototype.saveNotificationForUsers = function (callback) {
 			}.bind(this));
 		}.bind(this),
 		// Filter the users to only have the ones who have activated the notifications for this doodle
+		// The user who emited the notification does not get it no matter his configuration
 		function _getUsersWhoWantNotification (user_ids, finish) {
 			
 			var userIdsWhoWantNotif = [];
 
 			async.each(user_ids, function (user_id, end) {
+
+
+				// We do not send a notification to the user who provoked this notification
+				if (user_id.user_id.equals(this.user_id)) {
+					console.log("We do not create a notification for the user because he send the notification");
+					return end();
+				}
 
 				var query = 'SELECT user_id, notification FROM configuration_by_user_and_doodle WHERE user_id = ? AND doodle_id = ?';
 				notification.db.execute(query, [ user_id.user_id, this.doodle_id ], { prepare : true }, function (err, result) {
@@ -67,7 +75,9 @@ notification.prototype.saveNotificationForUsers = function (callback) {
 						return end(err);
 					}
 
+					// Good configuration
 					if (result.rows[0].notification === true) {
+						console.log("We create a notification for the user : ", user_id.user_id);
 						userIdsWhoWantNotif.push(result.rows[0].user_id);
 					}
 
@@ -93,6 +103,17 @@ notification.prototype.saveNotificationForUsers = function (callback) {
 			});
 		}.bind(this)
 	], function (err) {
+		return callback(err);
+	});
+};
+
+/**
+*	Set the notification as read by the user
+**/
+notification.isRead = function (user_id, notification_id, callback) {
+
+	var query = 'UPDATE notifications_by_user SET is_read = ? WHERE user_id = ? AND notification_id = ?';
+	notification.db.execute(query, [ true, user_id, notification_id ], { prepare : true }, function (err) {
 		return callback(err);
 	});
 };
@@ -135,22 +156,29 @@ notification.getInformations = function (notification_obj, callback) {
 
 				return done(null, result.rows[0]);
 			});
-		},
-
-		is_read: function _getIsRead (done) {
-			var query = 'SELECT is_read FROM notifications_by_user WHERE user_id = ? AND notification_id = ?';
-			notification.db.execute(query, [ notification_obj.user_id, notification_obj.notification_id ], { prepare : true }, function (err, result) {
-				if (err || result.rows.length === 0) {
-					return done(err);
-				}
-
-				return done(null, result.rows[0].is_read);
-			});
 		}
 	}, function (err, results) {
 
 		results.notification_id = notification_obj.notification_id;
 		return callback(err, results);
+	});
+};
+
+/**
+ * Get if the user has already read the notification or not
+ * @param user_id
+ * @param notification_id
+ * @param callback
+ */
+notification.getIsRead = function (user_id, notification_id, callback) {
+
+	var query = 'SELECT is_read FROM notifications_by_user WHERE user_id = ? AND notification_id = ?';
+	notification.db.execute(query, [ user_id, notification_id ], { prepare : true }, function (err, result) {
+		if (err || result.rows.length === 0) {
+			return callback(err);
+		}
+
+		return callback(null, result.rows[0].is_read);
 	});
 };
 
@@ -161,15 +189,20 @@ notification.getAll = function (notification_ids, callback) {
 
 	var notifications = [];
 
-	async.each(notification_ids, function (notification_id, done) {
+	if (!notification_ids) {
+		return callback();
+	}
+
+	async.each(notification_ids, function (notification_data, done) {
 
 		async.waterfall([
 			function _getNotification (finish) {
+
 				var query = 'SELECT * FROM notification WHERE notification_id = ?';
-				notification.db.execute(query, [ notification_id.notification_id ], { prepare : true }, function (err, result) {
+				notification.db.execute(query, [ notification_data.notification_id ], { prepare : true }, function (err, result) {
 
 					if (err || result.rows.length === 0) {
-						return finish(err);
+						return finish(err);	
 					}
 
 					return finish(null, result.rows[0]);
@@ -180,12 +213,18 @@ notification.getAll = function (notification_ids, callback) {
 			}
 		], function (err, result) {
 
-			notifications.push(result);
+			// We send the result inside the notifications array because
+			// it is sorted according to the time each notification was
+			// send, if we don't, we lose this order
+			notification_data.user = result.user;
+			notification_data.schedule = result.schedule;
+			notification_data.doodle = result.doodle;
+
 			return done(err, result);
 		});
 			
 	}, function (err) {
-		return callback(err, notifications);
+		return callback(err, notification_ids);
 	});
 };
 
@@ -220,7 +259,7 @@ notification.delete = function (notification_id, callback) {
 **/
 notification.getNotificationIdsFromUser = function (user_id, callback) {
 
-	var query = 'SELECT notification_id FROM notifications_by_user WHERE user_id = ?';
+	var query = 'SELECT notification_id FROM notifications_by_user WHERE user_id = ? order by notification_id desc';
 	notification.db.execute(query, [ user_id ], { prepare : true }, function (err, result) {
 		if (err || result.rows.length === 0) {
 			return callback(err, null);
