@@ -86,5 +86,7 @@
 	"Welcome !,An error occured : ResponseError: line 1:24 missing EOF at 'FROM'": "Welcome !,An error occured : ResponseError: line 1:24 missing EOF at 'FROM'",
 	"An error occured : ResponseError: line 1:24 missing EOF at 'FROM'": "An error occured : ResponseError: line 1:24 missing EOF at 'FROM'",
 	"has modify his/her vote about the following schedule : ": "has modify his/her vote about the following schedule : ",
-	"on the doodle ": "on the doodle "
+	"on the doodle ": "on the doodle ",
+	"An error occured : ResponseError: unconfigured columnfamily notiications_by_doodle": "An error occured : ResponseError: unconfigured columnfamily notiications_by_doodle",
+	"An error occured : TypeError: Not a valid Uuid, expected Uuid/String/Buffer, obtained { notification_id: TimeUuid: ce9a85e1-ea64-11e4-94f4-7352cded03cb }": "An error occured : TypeError: Not a valid Uuid, expected Uuid/String/Buffer, obtained { notification_id: TimeUuid: ce9a85e1-ea64-11e4-94f4-7352cded03cb }"
 }

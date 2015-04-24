@@ -102,8 +102,6 @@ module.exports = function (app, passport) {
                 req.flash('message', 'An error occured : ' + err);
             }
 
-            console.log('notifications : ', results.notifications);
-
             res.render('profile', {
                 user : req.user,
                 message : req.flash('message'),
@@ -292,8 +290,53 @@ module.exports = function (app, passport) {
     // DELETE DOODLE =======================
     // =====================================
     app.get('/doodle/delete/:id', isLoggedIn, function (req, res) {
-       
-        Doodle.delete(req.params.id, function (err, done) {
+
+        console.log("on rentre dans la bonne fonction");
+
+        async.parallel([
+            function _deleteDoodle (done) {
+                Doodle.delete(req.params.id, done);
+            },
+            function _deleteNotifications (done) {
+                ;
+                async.waterfall([
+                    // Get notification ids and user ids of the doodle
+                    function _getNotifIdsAndUserIds (finish) {
+                        async.parallel({
+                            notification_ids: function (end) {
+                                Doodle.getNotifIds(req.params.id, end)
+                            },
+                            user_ids: function (end) {
+                                Doodle.getUsersIds(req.params.id, end)
+                            }
+                        }, function (err, results) {
+                            return finish(err, results);
+                        });
+                    },
+                    // Detele the notifications and their associations
+                    function _deleteNotifications (data, finish) {
+
+                        async.parallel([
+                            function (end) {
+                                Notification.deleteAssociationsWithUser (data, end);
+                            },
+                            function (end) {
+                                Notification.deleteAssociationsWithDoodle (req.params.id, end);
+                            },
+                            function (end) {
+                                Notification.deleteAll (data.notification_ids, end);
+                            }
+                        ], function (err) {
+
+                            console.log("_deleteNotifications");
+                            return finish(err);
+                        });
+                    }
+                ], function (err) {
+                    return done(err);
+                });
+            }
+        ], function (err) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
             }
@@ -596,11 +639,13 @@ module.exports = function (app, passport) {
         var notification = new Notification(user_id, doodle_id, schedule_id);
 
         async.parallel([
+            // Save the vote in db
             function _saveVote(done) {
                 vote.save(function (err) {
                     return done(err);
                 });        
             },
+            // Save the notification about this vote
             function _saveNotification (done) {
                 notification.save(function (err) {
                     return done(err);

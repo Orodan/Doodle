@@ -55,6 +55,23 @@ doodle.prototype.save = function (callback) {
 // GETTERS =================================================================
 
 /**
+ * Get the notification ids associated with the doodle
+ * @param doodle_id
+ * @param callback
+ */
+doodle.getNotifIds = function (doodle_id, callback) {
+
+	var query = 'SELECT notification_id FROM notifications_by_doodle WHERE doodle_id = ?';
+	doodle.db.execute(query, [ doodle_id ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, result.rows);
+	});
+}
+
+/**
 *	Check if the doodle has still somes users left
 **/
 doodle.checkUsers = function (doodle_id, callback) {

@@ -40,13 +40,20 @@ user.prototype.save = function (callback) {
 user.getNotifications = function (user_id, callback) {
 
 	async.waterfall([
+		// Get the notification ids associated the user receive
 		function _getNotificationIdsFromUser (done) {
 			Notification.getNotificationIdsFromUser(user_id, done);
 		},
+		// Get all the informations of the notifications the user receive
 		function _getNotifications (notification_ids, done) {
 			Notification.getAll(notification_ids, done);
 		},
+		// Get if the notification has been read by the user
 		function _isRead (notifications, done) {
+
+			if (notifications.length === 0) {
+				return done(null);
+			}
 
 			// For each notification, we get if the user has already seen it or not
 			async.each(notifications, function (notification, finish) {
@@ -64,8 +71,6 @@ user.getNotifications = function (user_id, callback) {
 		}
 
 	], function (err, result) {
-
-		console.log("notifications : ", result);
 		return callback(err, result);
 	});
 };

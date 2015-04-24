@@ -31,8 +31,86 @@ notification.prototype.save = function (callback) {
 
 		// Save notification for the users with the good profile configuration
 		this.saveNotificationForUsers.bind(this),
+		this.saveNotificationsForDoodle.bind(this)
 
 	], function (err) {
+		return callback(err);
+	});
+};
+
+/**
+ * Create the notification between the notifications and the doodle
+ * @param callback
+ */
+notification.prototype.saveNotificationsForDoodle = function (callback) {
+
+	var query = 'INSERT INTO notifications_by_doodle (doodle_id, notification_id) values (?, ?)';
+	notification.db.execute(query, [ this.doodle_id, this.notification_id ], { prepare: true }, callback);
+};
+
+/**
+ * Delete the association between the user and the notifications ( from a single doodle )
+ * @param data
+ * @param callback
+ */
+notification.deleteAssociationsWithUser = function (data, callback) {
+
+	async.each(data.user_ids, function (user_id, done) {
+		async.each(data.notification_ids, function (notification_id, finish) {
+
+			var query = 'DELETE FROM notifications_by_user WHERE user_id = ? AND notification_id = ?';
+			notification.db.execute(query, [ user_id, notification_id.notification_id ], { prepare: true }, function (err) {
+				return finish(err);
+			});
+		}, function (err) {
+			return done(err);
+		});
+	}, function (err) {
+
+		console.log("deleteAssociationsWithUser");
+		return callback(err);
+	});
+};
+
+/**
+ * Delete the association between the doodle and its notifications
+ * @param data
+ * @param callback
+ */
+notification.deleteAssociationsWithDoodle = function (doodle_id, callback) {
+
+	var query = 'DELETE FROM notifications_by_doodle WHERE doodle_id = ?';
+	notification.db.execute(query, [ doodle_id ], { prepare : true }, function (err) {
+		console.log("deleteAssociationsWithDoodle");
+		return callback(err);
+	});
+};
+
+/**
+ * Delete all the notifications specified
+ * @param notification_ids
+ * @param callback
+ */
+notification.deleteAll = function (notification_ids, callback) {
+
+	async.each(notification_ids, function (notification_id, done) {
+		notification.delete(notification_id.notification_id, done);
+	},
+	function (err) {
+		console.log("deleteAll");
+		return callback(err);
+	});
+}
+
+/**
+ * Delete the notification
+ * @param notification_id
+ * @param callback
+ */
+notification.delete = function (notification_id, callback) {
+
+	var query = 'DELETE FROM notification WHERE notification_id = ?';
+	notification.db.execute(query, [ notification_id ], { prepare : true }, function (err) {
 		return callback(err);
 	});
 };
@@ -62,10 +140,8 @@ notification.prototype.saveNotificationForUsers = function (callback) {
 
 			async.each(user_ids, function (user_id, end) {
 
-
 				// We do not send a notification to the user who provoked this notification
 				if (user_id.user_id.equals(this.user_id)) {
-					console.log("We do not create a notification for the user because he send the notification");
 					return end();
 				}
 
@@ -77,7 +153,6 @@ notification.prototype.saveNotificationForUsers = function (callback) {
 
 					// Good configuration
 					if (result.rows[0].notification === true) {
-						console.log("We create a notification for the user : ", user_id.user_id);
 						userIdsWhoWantNotif.push(result.rows[0].user_id);
 					}
 
@@ -190,7 +265,7 @@ notification.getAll = function (notification_ids, callback) {
 	var notifications = [];
 
 	if (!notification_ids) {
-		return callback();
+		return callback(null, []);
 	}
 
 	async.each(notification_ids, function (notification_data, done) {
@@ -244,14 +319,52 @@ notification.get = function (notification_id, callback) {
 };
 
 /**
-*	Delete the notification
-**/
-notification.delete = function (notification_id, callback) {
-	
-	var query = 'DELETE FROM notifications_by_user WHERE user_id = ? AND doodle_id = ? AND schedule_id = ?';
-	notification.db.execute(query, [ user_id, doodle_id, schedule_id ], { prepare : true }, function (err) {
-		return callback(err);
+ * Delete the notifications of the doodle
+ * @param doodle_id
+ * @param callback
+ */
+notification.deleteNotifications = function (doodle_id, callback) {
+
+	// Get notification ids and user ids associated to the doodle
+	async.parallel({
+		notification_ids: function _getNotificationIds(done) {
+			var query = 'SELECT notification_id FROM notifications_by_doodle WHERE doodle_id = ?';
+			notification.db.execute(query, [doodle_id], {prepare: true}, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(result.rows);
+			})
+		},
+		user_ids: function _getUserIds(done)
+		{
+			var query = 'SELECT user_id FROM users_by_doodle WHERE doodle_id = ?';
+			notification.db.execute(query, [doodle_id], {prepare: true}, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(result.rows);
+			});
+		}
+	}, function (err, results) {
+		return callback(err, results);
 	});
+
+	async.waterfall([
+		// Get the notification ids associated with the doodle
+		function _getNotificationIds (done) {
+			notification.getNotificationIdsFromDoodle(doodle_id, done)
+		},
+		function _deleteNotif (notification_ids, done) {
+			async.parallel([
+				notification.deleteAssociationUserNotifications(),
+				notification.deleteAssociationDoodleNotification(),
+				notification.delete()
+			], callback);
+		}
+	]);
 };
 
 /**
