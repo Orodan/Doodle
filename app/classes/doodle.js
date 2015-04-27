@@ -34,12 +34,23 @@ doodle.newPublic = function (doodle_name, doodle_description, callback) {
 	});
 };
 
+/**
+ * Constructor
+ * @param name
+ * @param description
+ * @param user_id
+ * @param callback
+ */
 function doodle (name, description, user_id, callback) {
 
 	this.id = doodle.uuid();
 	this.name = name;
 	this.description = description;
 }
+
+/**********************************\
+ ***** PROTOTYPAL FUNCTIONS ******
+\**********************************/
 
 /**
 *	Save the doodle in database
@@ -52,7 +63,20 @@ doodle.prototype.save = function (callback) {
 	});
 };
 
-// GETTERS =================================================================
+/**
+ * GETTERS
+ */
+doodle.prototype.getId = function () {
+	return this.id;
+};
+
+/***********************************\
+ *********** FUNCTIONS ************
+\***********************************/
+
+/**
+ * GETTERS
+ */
 
 /**
  * Get the notification ids associated with the doodle
@@ -89,99 +113,6 @@ doodle.checkUsers = function (doodle_id, callback) {
 		else {
 			return callback(null, false);
 		}
-	});
-};
-
-/**
-*	Get users from the administration_link_id of the doodle
-**/
-doodle.getUsersFromAdminLinkId = function (admin_link_id, callback) {
-
-	doodle.getDoodleIdFromAdminLinkId (admin_link_id, function (err, doodle_id) {
-		if (err) {
-			return callback(err);
-		}
-
-		doodle.getUsers(doodle_id, function (err, users) {
-			if (err) {
-				return callback(err);
-			}
-
-			return callback(null, users);
-		});
-	});
-};
-
-/**
-*	Get all the informations about the doodle from its administration link id associated
-**/
-doodle.getAllInformationsFromAdministrationLinkId = function (admin_link_id, callback) {
-
-	// We get the doodle id from the administration link id
-	doodle.getDoodleIdFromAdminLinkId(admin_link_id, function (err, doodle_id) {
-		if (err) {
-			return callback(err);
-		}
-
-		// We get the informations about the doodle
-		doodle.getAllInformations(doodle_id, function (err, data) {
-			if (err) {
-				return callback(err);
-			}
-
-			return callback(null, data);
-		});
-	});
-};
-
-/**
-*	Check if the id is an administration id or a doodle id
-**/
-doodle.checkAdminLinkId = function (link_id, callback) {
-
-	var query = 'SELECT * FROM Doodle.doodle_by_admin_link_id WHERE admin_link_id = ?';
-	doodle.db.execute(query, [ link_id ], { prepare : true }, function (err, data) {
-		if (err) {
-			return callback(err);
-		}
-
-		// We have found data, link_id was the administration_link_id
-		if ( data.rows.length > 0 ) {
-			return callback(null, true);
-		}
-		else {
-			// We check if this link_id is a doodle_id
-			doodle.get(link_id, function (err, data) {
-				if (err) {
-					return callback(err);
-				}
-
-				// The link_id is a doodle_id
-				if (data) {
-					return callback(null, false);
-				}
-				// The link_id is not an administration id neither a doodle_id -> error
-				else {
-					return callback('The id is not an administration id, neither a doodle id', null);
-				}
-			});
-		}
-	});
-};
-
-/**
-*	Get the doodle_id associated with the admin_link_ik
-**/
-doodle.getDoodleIdFromAdminLinkId = function (link_id, callback) {
-
-	var query = 'SELECT doodle_id FROM Doodle.doodle_by_admin_link_id WHERE admin_link_id = ?';
-	doodle.db.execute(query, [ link_id ], { prepare : true }, function (err, data) {
-		if (err) {
-			return callback(err);
-		}
-
-		var doodle_id = data.rows[0].doodle_id;
-		return callback(null, doodle_id);
 	});
 };
 
@@ -569,46 +500,11 @@ doodle.checkUserAccess = function (id, user_id, callback) {
 // SETTERS =================================================================
 
 /**
-*	Generate access links for user and administrater for the doodle
-*	( Table doodles_by_admin)
-**/
-doodle.generateLinks = function (id, callback) {
-
-	var admin_link_id = uuid.v4();
-	var query = 'INSERT INTO Doodle.doodle_by_admin_link_id (admin_link_id, doodle_id) values (?, ?)';
-	doodle.db.execute(query, [ admin_link_id, id ], { prepare : true }, function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		var data = {};
-		data.admin_link_id = admin_link_id;
-		data.user_link_id = id;
-
-		return callback(null, data);
-	});
-};
-
-/**
 *	Save several votes associated with the doodle, the user and the schedules
 **/
 doodle.saveVotes = function (doodle_id, user_id, params, callback) {
 
 	doodle.__processSaveVotes(doodle_id, user_id, params, 0, function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		return callback(null, true);
-	});
-};
-
-/**
-*	Save many schedules to the doodle
-**/
-doodle.addSchedules = function (id, params, callback) {
-
-	doodle.__processAddSchedules(id, params, 0, function (err, result) {
 		if (err) {
 			return callback(err);
 		}
@@ -1792,28 +1688,6 @@ doodle.__processDeleteVoteOnUserFromSchedule = function (id, schedule_id, user_i
 			doodle.__processDeleteVoteOnUserFromSchedule(id, schedule_id, user_ids, key, callback);
 		});
 
-	}
-	else {
-		return callback(null, true);
-	}
-};
-
-/**
-*	Recursive function to save several schedules to the doodle
-**/
-doodle.__processAddSchedules = function (id, schedules, key, callback) {
-
-	if ( schedules.length > key ) {
-		var schedule = schedules[key];
-
-		doodle.addSchedule(id, schedule, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
-
-			key++;
-			doodle.__processAddSchedules(id, schedules, key, callback);
-		});
 	}
 	else {
 		return callback(null, true);

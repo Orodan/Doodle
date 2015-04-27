@@ -17,9 +17,12 @@
         <h1><span class="fa fa-money"></span> Doodle</h1>
 
         <!-- ALERT MESSAGE -->
+
         <% if (message && message.length > 0) { %>
-            <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
-                <%= message %>
+            <div class="row">
+                <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
+                    <%= message %>
+                </div>
             </div>
         <% } %>
 

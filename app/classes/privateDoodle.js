@@ -8,11 +8,10 @@ var async = require('async');
 *	Constructor
 **/
 function privateDoodle (name, description) {
-
 	Doodle.call(this, name, description);
 }
 
-// Héritage de Doodle
+// Doodle's heritage
 util.inherits(privateDoodle, Doodle);
 
 /**

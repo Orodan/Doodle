@@ -1,6 +1,7 @@
 // Dependencies ===========================
 var Doodle = require('./classes/doodle');
 var privateDoodle = require('./classes/privateDoodle');
+var publicDoodle = require('./classes/publicDoodle');
 var User = require('./classes/user');
 var Vote = require('./classes/vote');
 var Notification = require('./classes/notification');
@@ -291,8 +292,6 @@ module.exports = function (app, passport) {
     // =====================================
     app.get('/doodle/delete/:id', isLoggedIn, function (req, res) {
 
-        console.log("on rentre dans la bonne fonction");
-
         async.parallel([
             function _deleteDoodle (done) {
                 Doodle.delete(req.params.id, done);
@@ -327,8 +326,6 @@ module.exports = function (app, passport) {
                                 Notification.deleteAll (data.notification_ids, end);
                             }
                         ], function (err) {
-
-                            console.log("_deleteNotifications");
                             return finish(err);
                         });
                     }
@@ -726,7 +723,10 @@ module.exports = function (app, passport) {
     app.post('/new-public-schedules', function (req, res) {
 
         // Create the doodle 
-        Doodle.newPublic(req.session.doodle.name, req.session.doodle.description, function (err, doodle) {
+        // Doodle.newPublic(req.session.doodle.name, req.session.doodle.description, function (err, doodle) {
+        var doodle = new publicDoodle (req.session.doodle.name, req.session.doodle.description);
+
+        doodle.save(function (err) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
                 res.redirect('index');
@@ -734,7 +734,7 @@ module.exports = function (app, passport) {
             else {
 
                 // Create the schedules of the doodle
-                Doodle.addSchedules(doodle.id, req.body.schedules, function (err, result) {
+                doodle.addSchedules(req.body.schedules, function (err, result) {
                     if (err) {
                         req.flash('message', 'An error occured : ' + err);
                         res.redirect('index');
@@ -744,15 +744,17 @@ module.exports = function (app, passport) {
                         var user_link = req.headers.host + '/public-doodle/' + doodle.id;
 
                         // Generate and associate a administration link to the doodle
-                        Doodle.generateLinks(doodle.id, function (err, data) {
+                        doodle.generateLinks(function (err, data) {
                             if (err) {
                                 req.flash('message', 'An error occured : ' + err);
+                                console.log('Erreur :', err);
                                 res.redirect('/');
                             }
                             else {
                                 req.session.doodle_administration_link = req.headers.host + '/public-doodle/' + data.admin_link_id;
                                 req.session.doodle_user_link = req.headers.host + '/public-doodle/' + data.user_link_id;
 
+                                console.log('Pas d\'erreur');
                                 res.redirect('/index-public-doodle');
                             }
                         });
@@ -787,49 +789,53 @@ module.exports = function (app, passport) {
     // Show the public doodle 
     app.get('/public-doodle/:id', function (req, res) {
 
-        // We check if we are on an administration link or just an user link
-        Doodle.checkAdminLinkId(req.params.id, function (err, result) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
+        async.waterfall([
+            function _checkLinkId (done) {
+                publicDoodle.checkLinkId(req.params.id, done);
+            },
+            function _handleResult (statut, done) {
+
+                switch (statut) {
+                    case 'administrator':
+                        // We get the informations about the doodle from the administration_link_id
+                        publicDoodle.getAllInformationsFromAdminLinkId(req.params.id, function (err, doodle) {
+                            if (err) {
+                                req.flash('message', 'An error occured : ' + err);
+                            }
+
+                            req.session.admin_link_id = req.params.id;
+
+                            res.render('public-doodle', {
+                                doodle : doodle,
+                                statut : statut,
+                                message : req.flash('message')
+                            });
+                        });
+
+                        break;
+                    case 'user':
+                        // We get informations about the doodle from its id
+                        publicDoodle.getAllInformations(req.params.id, function (err, doodle) {
+                            if (err) {
+                                req.flash('message', 'An error occured : ' + err);
+                            }
+
+                            res.render('public-doodle', {
+                                doodle : doodle,
+                                statut : statut,
+                                message : req.flash('message')
+                            });
+                        });
+
+                        break;
+                    default:
+                        req.flash('message', 'The page you tried to access does not exists');
+                        res.redirect('/');
+
+                        break;
+                }
             }
-
-            // If the administration link was called -> true
-            // If the user link was called -> false
-            var admin = result;
-
-            if (admin) {
-
-                // We get the informations about the doodle from the administration_link_id
-                Doodle.getAllInformationsFromAdministrationLinkId(req.params.id, function (err, doodle) {
-                    if (err) {
-                        req.flash('message', 'An error occured : ' + err);
-                    }
-
-                    req.session.admin_link_id = req.params.id;
-
-                    res.render('public-doodle', {
-                        doodle : doodle,
-                        admin : admin,
-                        message : req.flash('message')
-                    });
-                });
-            }
-            else {
-
-                // We get informations about the doodle from its id
-                Doodle.getAllInformations(req.params.id, function (err, doodle) {
-                    if (err) {
-                        req.flash('message', 'An error occured : ' + err);
-                    }
-
-                    res.render('public-doodle', {
-                        doodle : doodle,
-                        admin : admin,
-                        message : req.flash('message')
-                    });
-                });
-            }
-        });
+        ]);
     });
 
 

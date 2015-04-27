@@ -17,6 +17,10 @@ function configuration (user_id, doodle_id, notification, notification_by_email)
 
 }
 
+/**********************************\
+ ***** PROTOTYPAL FUNCTIONS ******
+\**********************************/
+
 /**
 *	Save the configuration in db
 **/
@@ -28,6 +32,9 @@ configuration.prototype.save = function (callback) {
 	});
 };
 
+/***********************************\
+ *********** FUNCTIONS ************
+\***********************************/
 
 /**
 *	Get the configuration
