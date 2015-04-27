@@ -63,4 +63,20 @@ jQuery(function($) {
 		});
 	});
 
+	/**************************\
+ 	****** PUBLIC DOODLE *******
+    \**************************/
+
+	$(document).on('click', '#btn-doodle-name-description', function (e) {
+		e.preventDefault();
+		$('#doodle-name-description').toggleClass('hidden');
+		$('#doodle-schedules').toggleClass('hidden');
+	});
+
+	$(document).on('click', '#btn-previous', function (e) {
+		e.preventDefault();
+		$('#doodle-name-description').toggleClass('hidden');
+		$('#doodle-schedules').toggleClass('hidden');
+	});
+
 });

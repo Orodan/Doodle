@@ -16,23 +16,66 @@
     <div class="container">
         <div class="col-sm-6 col-sm-offset-3">
 
-            <div class="jumbotron text-center">
-                <h1><%= __('Public doodle') %></h1>
-                <br/>
+            <form action="#" method="post">
+                <div id="doodle-name-description">
+                    <div class="jumbotron text-center">
+                        <h1><span class="fa fa-money"></span> <%= __('Doodle') %></h1>
+                        <br/>
 
-                <!-- PUBLIC DOODLE FORM -->
-                <form action="#" method="post">
-                    <div class="form-group">
-                        <input type="text" name="name" placeholder="<%= __('Name') %>" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <textarea type="textarea" name="description" placeholder="<%= __('description') %>" class="form-control"></textarea>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-default"><%= __('Submit') %></button>
-                </form>
+                        <!-- PUBLIC DOODLE FORM -->
 
-            </div>
+                            <div class="form-group">
+                                <input type="text" name="name" placeholder="<%= __('Name') %>" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <textarea type="textarea" name="description" placeholder="<%= __('description') %>" class="form-control"></textarea>
+                            </div>
+
+                            <button id="btn-doodle-name-description" class="btn btn-default"><%= __('Next') %></button>
+                    </div>
+                </div>
+
+                <div class="hidden" id="doodle-schedules">
+                    <div class="jumbotron text-center">
+                        <h1><span class="fa fa-money"></span> Doodle</h1>
+
+                        <p><%= __('Choose the schedules') %></p><br/>
+
+                        <% if (typeof message != 'undefined' && message.length > 0) { %>
+                        <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
+                            <%= message %>
+                        </div>
+                        <% } %>
+
+                            <div id="public-schedules">
+                                <div class="form-inline">
+
+                                    <div class="form-group" style="width: 49%;">
+                                        <input type="date" name='schedules[0][begin_date]' class="form-control">
+                                    </div>
+                                    <div class="form-group" style="width: 49%;">
+                                        <input type="text" name='schedules[0][begin_hour]' placeholder="HH:mm" class="form-control">
+                                    </div>
+
+                                    <div class="form-group" style="width: 49%;">
+                                        <input type="date" name='schedules[0][end_date]' class="form-control">
+                                    </div>
+                                    <div class="form-group" style="width: 49%;">
+                                        <input type="text" name='schedules[0][end_hour]' placeholder="HH:mm" class="form-control">
+                                    </div>
+                                </div>
+                                <br/>
+                            </div>
+
+                            <button class="btn btn-primary" id="add-schedule"><%= __('Add schedule') %></button>
+                            <br/><br/>
+
+                            <button id="btn-previous" class="btn btn-default"><%= __('Previous') %></button>
+                            <button type="submit" class="btn btn-default"><%= __('Submit') %></button>
+                    </div>
+                </div>
+            </form>
+
         </div>
     </div>
 

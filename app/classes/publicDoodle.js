@@ -74,6 +74,31 @@ publicDoodle.prototype.generateLinks = function (callback) {
  *********** FUNCTIONS ************
 \***********************************/
 
+/*********************\
+ ****** GETTERS ******
+\*********************/
+
+/**
+ * Get the doodle_id
+ * @param admin_link_id
+ */
+publicDoodle.getDoodleIdFromAdminLinkId = function (admin_link_id, callback) {
+
+    var query = 'SELECT doodle_id FROM doodle_by_admin_link_id WHERE admin_link_id = ?';
+    publicDoodle.super_.db.execute(query, [ admin_link_id ], { prepare : true }, function (err, result) {
+        if (err) {
+            return callback(err);
+        }
+
+        if (result.rows.length === 0) {
+            return callback();
+        }
+
+        return callback(null, result.rows[0].doodle_id);
+    });
+};
+
+
 /**
  * Check the link id
  * @param link_id
@@ -88,13 +113,13 @@ publicDoodle.checkLinkId = function (link_id, callback) {
     var query = 'SELECT * FROM Doodle.doodle_by_admin_link_id WHERE admin_link_id = ?';
     async.series([
         function _checkIfAdmin (done) {
-            publicDoodle.super_.db.execute(query, [ link_id ], { prepare : true }, function (err, result) {
+            publicDoodle.getDoodleIdFromAdminLinkId(link_id, function (err, result) {
                 if (err) {
                     return done(err);
                 }
 
                 // Admin link
-                if (result && result.rows.length > 0) {
+                if (result) {
                     response = 'administrator';
                 }
 

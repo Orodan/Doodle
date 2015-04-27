@@ -679,15 +679,27 @@ module.exports = function (app, passport) {
     // Process the doodle form
     app.post('/new-public-doodle', function (req, res) {
 
-        req.session.doodle = {};
+        var doodle = new publicDoodle (req.body.name, req.body.description);
 
-        req.session.doodle.name = req.body.name;
-        req.session.doodle.description = req.body.description;
+        async.waterfall([
+            function _saveDoodle (done) {
+                doodle.save(done);
+            },
+            function _addSchedules (done) {
+                doodle.addSchedules(req.body.schedules, done);
+            },
+            function _generateLinks (done) {
+                doodle.generateLinks(done);
+            }
+        ], function (err, result) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+                res.redirect('/');
+            }
 
-        res.redirect('/new-public-schedules');
+            res.redirect('/index-public-doodle/' + result.admin_link_id);
+        });
     });
-
-
 
     // =====================================
     // DELETE PUBLIC DOODLE ================
@@ -710,80 +722,25 @@ module.exports = function (app, passport) {
         });
     });
 
-
-    // =====================================
-    // NEW PUBLIC SCHEDULES ================
-    // =====================================
-    // Show the schedules form
-    app.get('/new-public-schedules', function (req, res) {
-        res.render('new-public-schedules');
-    });
-
-    // Process the schedules form
-    app.post('/new-public-schedules', function (req, res) {
-
-        // Create the doodle 
-        // Doodle.newPublic(req.session.doodle.name, req.session.doodle.description, function (err, doodle) {
-        var doodle = new publicDoodle (req.session.doodle.name, req.session.doodle.description);
-
-        doodle.save(function (err) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-                res.redirect('index');
-            }
-            else {
-
-                // Create the schedules of the doodle
-                doodle.addSchedules(req.body.schedules, function (err, result) {
-                    if (err) {
-                        req.flash('message', 'An error occured : ' + err);
-                        res.redirect('index');
-                    }
-                    else {
-
-                        var user_link = req.headers.host + '/public-doodle/' + doodle.id;
-
-                        // Generate and associate a administration link to the doodle
-                        doodle.generateLinks(function (err, data) {
-                            if (err) {
-                                req.flash('message', 'An error occured : ' + err);
-                                console.log('Erreur :', err);
-                                res.redirect('/');
-                            }
-                            else {
-                                req.session.doodle_administration_link = req.headers.host + '/public-doodle/' + data.admin_link_id;
-                                req.session.doodle_user_link = req.headers.host + '/public-doodle/' + data.user_link_id;
-
-                                console.log('Pas d\'erreur');
-                                res.redirect('/index-public-doodle');
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    });
-
-
-
     // =====================================
     // SHOW PUBLIC DOODLE ==================
     // =====================================
     // Show generated links for the public doodle
-    app.get('/index-public-doodle', function (req, res) {
+    app.get('/index-public-doodle/:admin_link_id', function (req, res) {
 
-        var admin_link = req.session.doodle_administration_link;
-        var user_link = req.session.doodle_user_link;
+        publicDoodle.getDoodleIdFromAdminLinkId(req.params.admin_link_id, function (err, doodle_id) {
 
-        req.session.user = null;
-        req.session.doodle = null;
-        req.session.doodle_administration_id = null;
-        req.session.doodle_user_id = null;
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+                res.redirect('/');
+            }
 
-        res.render('index-public-doodle', {
-            doodle_administration_link : admin_link,
-            doodle_user_link : user_link
+            res.render('index-public-doodle', {
+                doodle_administration_link : req.headers.host + '/public-doodle/' + req.params.admin_link_id,
+                doodle_user_link : req.headers.host + '/public-doodle/' + doodle_id
+            });
         });
+
     });
 
     // Show the public doodle 
