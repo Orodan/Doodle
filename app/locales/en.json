@@ -90,5 +90,8 @@
 	"An error occured : ResponseError: unconfigured columnfamily notiications_by_doodle": "An error occured : ResponseError: unconfigured columnfamily notiications_by_doodle",
 	"An error occured : TypeError: Not a valid Uuid, expected Uuid/String/Buffer, obtained { notification_id: TimeUuid: ce9a85e1-ea64-11e4-94f4-7352cded03cb }": "An error occured : TypeError: Not a valid Uuid, expected Uuid/String/Buffer, obtained { notification_id: TimeUuid: ce9a85e1-ea64-11e4-94f4-7352cded03cb }",
 	"Previous": "Previous",
-	"Next": "Next"
+	"Next": "Next",
+	"User removed": "User removed",
+	"Begin date": "Begin date",
+	"End date": "End date"
 }

@@ -16,22 +16,21 @@
     <div class="container">
         <div class="col-sm-6 col-sm-offset-3">
 
+            <!-- PUBLIC DOODLE FORM -->
             <form action="#" method="post">
                 <div id="doodle-name-description">
                     <div class="jumbotron text-center">
                         <h1><span class="fa fa-money"></span> <%= __('Doodle') %></h1>
                         <br/>
 
-                        <!-- PUBLIC DOODLE FORM -->
+                        <div class="form-group">
+                            <input type="text" name="name" placeholder="<%= __('Name') %>" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <textarea type="textarea" name="description" placeholder="<%= __('description') %>" class="form-control"></textarea>
+                        </div>
 
-                            <div class="form-group">
-                                <input type="text" name="name" placeholder="<%= __('Name') %>" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <textarea type="textarea" name="description" placeholder="<%= __('description') %>" class="form-control"></textarea>
-                            </div>
-
-                            <button id="btn-doodle-name-description" class="btn btn-default"><%= __('Next') %></button>
+                        <button id="btn-doodle-name-description" class="btn btn-default"><%= __('Next') %></button>
                     </div>
                 </div>
 

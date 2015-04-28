@@ -6,6 +6,7 @@ var User = require('./user');
 var Vote = require('./vote');
 var Notification = require('./notification');
 var Configuration = require('./configuration');
+var moment = require('moment');
 
 // FUNCTIONS ===============================================================
 
@@ -33,6 +34,8 @@ doodle.newPublic = function (doodle_name, doodle_description, callback) {
 		});
 	});
 };
+
+doodle.lang = 'en';
 
 /**
  * Constructor
@@ -311,26 +314,37 @@ doodle.getUsersFromIds = function (user_ids, callback) {
 **/
 doodle.getSchedules = function (id, callback) {
 
-	// We get every schedule id associated with the doodle
-	var query = "SELECT schedule_id FROM Doodle.schedules_by_doodle WHERE doodle_id = ?";
-	doodle.db.execute(query, [ id ], { prepare : true }, function (err, data) {
-		if (err) {
-			return callback(err);
+	async.waterfall([
+		function _getScheduleIds (done) {
+			var query = 'SELECT schedule_id FROM Doodle.schedules_by_doodle WHERE doodle_id = ?';
+			doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(null, result.rows);
+			});
+		},
+		function _getSchedulesFromIds(schedule_ids, done) {
+
+			var schedules = [];
+			async.each(schedule_ids, function (schedule_id, finish) {
+				var query = 'SELECT * FROM schedule WHERE id = ?';
+				doodle.db.execute(query, [ schedule_id.schedule_id ], { prepare : true }, function (err, result) {
+					if (err) {
+						return finish(err);
+					}
+
+					schedules.push(result.rows[0]);
+
+					return finish(null);
+				});
+			}, function (err) {
+				return done(err, schedules);
+			});
 		}
-
-		var schedule_ids = [];
-		for (var key in data.rows) {
-			schedule_ids.push(data.rows[key].schedule_id);
-		}
-
-		// We get the informations about theses schedules
-		doodle.getSchedulesFromIds(schedule_ids, function (err, schedules) {
-			if (err) {
-				return callback(err);
-			}
-
-			return callback(null, schedules);
-		});
+	], function (err, result) {
+		return callback(err, result);
 	});
 };
 
@@ -518,10 +532,10 @@ doodle.saveVotes = function (doodle_id, user_id, params, callback) {
 **/
 doodle.addSchedule = function (doodle_id, params, callback) {
 
-	var begin_date = new Date(params.begin_date + ' ' + params.begin_hour).getTime();
-	var end_date = new Date(params.end_date + ' ' + params.end_hour).getTime();
+	var begin_date = moment(params.begin_date);
+	var end_date = moment(params.end_date);
 
-	// Create the  schedule
+	// Create the schedule
 	var schedule = new Schedule(begin_date, end_date);
 
 	async.parallel([

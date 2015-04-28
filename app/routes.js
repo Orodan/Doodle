@@ -6,12 +6,20 @@ var User = require('./classes/user');
 var Vote = require('./classes/vote');
 var Notification = require('./classes/notification');
 var PublicUser = require('./classes/publicUser');
+var Schedule = require('./classes/schedule');
 var Configuration = require('./classes/configuration');
 var async = require('async');
 
 module.exports = function (app, passport) {
 
     app.get('/choose-language', function (req, res) {
+
+        // Language set
+        Doodle.lang = req.query.language;
+        Schedule.lang = req.query.language;
+
+        console.log('setting language : ', req.query.language);
+
         res.cookie('mylanguage', req.query.language, { maxAge: 900000, httpOnly: true });
         res.redirect('/');
     });
@@ -20,6 +28,14 @@ module.exports = function (app, passport) {
     // HOME PAGE ===========================
     // =====================================
     app.get('/', function (req, res) {
+
+        // Language set
+        if (req.cookies.mylanguage) {
+            console.log('setting language on home page loading : ', req.cookies.mylanguage);
+
+            Doodle.lang = req.cookies.mylanguage;
+            Schedule.lang = req.cookies.mylanguage;
+        }
 
     	res.render('index', {
             message : req.flash('message'),
@@ -492,42 +508,26 @@ module.exports = function (app, passport) {
     // Process doodle remove-user form
     app.post('/doodle/:id/remove-user', isLoggedIn, function (req, res) {
 
-        var id = req.params.id;
+        var doodle_id = req.params.id;
         var user_id = req.body.user;
 
-        Doodle.removeUserFromDoodle(id, user_id, function (err, result) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-            }
-            else {
-                req.flash('message', 'User removed !');
+        async.series([
+            function _removeUserFromDoodle(done) {
+                Doodle.removeUserFromDoodle(doodle_id, user_id, done);
+            },
+            function _checkUserAccess(done) {
+                Doodle.checkUserAccess(doodle_id, req.user.id, function (err, result) {
+                    if (err) {
+                        return done(err);
+                    }
 
-                // Check if the doodle has still at least one user left
-                if (result) {
-
-                    var current_user_id = req.user.id;
-                    // Check if the current user has still access to the doodle
-                    Doodle.checkUserAccess(id, current_user_id, function (err, result) {
-                        if (err) {
-                            req.flash('message', 'An error occured : ' + err);
-                        }
-                        else {
-                            // User has still access
-                            if (result) {
-                                res.redirect('/doodle/' + id);
-                            }
-                            else {
-                                res.redirect('/profile');
-                            }
-                        }
-                    });
-                }
-                // The doodle has no user left, it was deleted
-                else {
-                    req.flash('message', 'Doodle deleted !');
-                    res.redirect('/profile');
-                }
+                    req.flash('message', 'User removed');
+                    (result) ? res.redirect('/doodle/' + doodle_id) : res.redirect('/profile');
+                });
             }
+        ], function (err) {
+            req.flash('message', 'An error occured : ' + err);
+            res.redirect('/profile');
         });
     });
 
@@ -553,13 +553,11 @@ module.exports = function (app, passport) {
             else {
                 req.flash('message', 'Schedule added !');
             }
-            
+
             res.redirect('/doodle/' +id);
         });
 
     });
-
-
 
     // =====================================
     // DELETE SCHEDULE =====================
@@ -567,19 +565,19 @@ module.exports = function (app, passport) {
     // Show doodle delete-schedule form
     app.get('/doodle/:id/delete-schedule', isLoggedIn, function (req, res) {
 
-            var id = req.params.id;
+        var id = req.params.id;
 
-            Doodle.getSchedules(id, function (err, schedules) {
-                if (err) {
-                    req.flash('message', 'An error occured : ' + err);
-                    res.redirect('/doodle/' + id);
-                }
-                else {
-                    res.render('delete-schedule', {
-                        schedules : schedules
-                    });
-                }
-            });
+        Doodle.getSchedules(id, function (err, schedules) {
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+                res.redirect('/doodle/' + id);
+            }
+            else {
+                res.render('delete-schedule', {
+                    schedules : schedules
+                });
+            }
+        });
     });
 
     // Process doodle delete-schedule form
@@ -809,7 +807,6 @@ module.exports = function (app, passport) {
     app.post('/public-doodle/:id/add-public-user', function (req, res) {
 
         var doodle_id = req.params.id;
-
         var user = new PublicUser(req.body.first_name, req.body.last_name);
 
         user.save(doodle_id, function (err, result) {
@@ -823,8 +820,6 @@ module.exports = function (app, passport) {
             }
         });
     });
-
-
 
     // =====================================
     // REMOVE PUBLIC USER ==================

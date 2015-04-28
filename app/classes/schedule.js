@@ -1,6 +1,7 @@
 // dependencies ===============================================================
 var async = require('async');
 var Vote = require('./vote');
+var moment = require('moment');
 
 /**
 *	Construtor
@@ -12,6 +13,8 @@ function schedule (begin_date, end_date) {
 	this.end_date = end_date;
 }
 
+schedule.lang = 'en';
+
 /**
 *	Save the schedule in database
 **/
@@ -19,8 +22,9 @@ schedule.prototype.save = function (doodle_id, callback) {
 
 	async.parallel([
 		function _saveSchedule (done) {
+
 			var query = 'INSERT INTO schedule (id, begin_date, end_date) values (?, ?, ?)';
-			schedule.db.execute(query, [ this.id, this.begin_date, this.end_date, ], { prepare : true }, function (err, result) {
+			schedule.db.execute(query, [ this.id, this.begin_date.format(), this.end_date.format() ], { prepare : true }, function (err, result) {
 				if (err) {
 					return done(err);
 				}
@@ -102,8 +106,16 @@ schedule.getSchedulesFromIds = function (schedule_ids, callback) {
 					return done(err);
 				}
 
-				result.begin_date = new Date(result.begin_date);
-				result.end_date = new Date(result.end_date);
+				result.begin_date = moment(result.begin_date);
+				result.end_date = moment(result.end_date);
+
+				result.begin_date.locale(schedule.lang);
+				result.end_date.locale(schedule.lang);
+
+				console.log('langage : ', schedule.lang);
+
+				console.log('begin_date : ', result.begin_date.format('LL'), result.begin_date.format('LT'));
+				console.log('end_date : ', result.end_date.format('LL'), result.end_date.format('LT'));
 
 				schedules.push(result);
 

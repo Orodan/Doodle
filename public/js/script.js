@@ -79,4 +79,7 @@ jQuery(function($) {
 		$('#doodle-schedules').toggleClass('hidden');
 	});
 
+	/**************************\
+	 ****** DATE PICKER *******
+    \**************************/
 });
