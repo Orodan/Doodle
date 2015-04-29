@@ -532,8 +532,17 @@ doodle.saveVotes = function (doodle_id, user_id, params, callback) {
 **/
 doodle.addSchedule = function (doodle_id, params, callback) {
 
-	var begin_date = moment(params.begin_date);
-	var end_date = moment(params.end_date);
+	switch (doodle.lang) {
+		case 'en':
+			var begin_date = moment(params.begin_date);
+			var end_date = moment(params.end_date);
+			break;
+		case 'fr':
+			var begin_date = moment(params.begin_date, 'DD/MM/YYYY hh:mm');
+			var end_date = moment(params.end_date, 'DD/MM/YYYY hh:mm');
+			break;
+		default: break;
+	}
 
 	// Create the schedule
 	var schedule = new Schedule(begin_date, end_date);

@@ -538,7 +538,9 @@ module.exports = function (app, passport) {
     // =====================================
     // Show doodle add-schedule form
     app.get('/doodle/:id/add-schedule', isLoggedIn, function (req, res) {
-        res.render('add-schedule');
+        res.render('add-schedule', {
+            lang: Doodle.lang
+        });
     });
 
     // Process doodle add-schedule form

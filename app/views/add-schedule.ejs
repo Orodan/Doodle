@@ -62,12 +62,18 @@
     <script type="text/javascript" src="/js/script.js"></script>
 
     <script type="text/javascript">
+        console.log('<%= lang %>');
+
         $(function () {
-            $('#datetimepicker1').datetimepicker();
+            $('#datetimepicker1').datetimepicker({
+                locale: '<%= lang %>'
+            });
         });
 
         $(function () {
-            $('#datetimepicker2').datetimepicker();
+            $('#datetimepicker2').datetimepicker({
+                locale: '<%= lang %>'
+            });
         });
     </script>
 </body>
