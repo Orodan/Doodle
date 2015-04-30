@@ -1,0 +1,37 @@
+<!-- views/pages/home.ejs -->
+<!doctype html>
+<html>
+<head>
+    <% include ../partials/head %>
+</head>
+<body class="container">
+
+<!-- Header -->
+<% include ../partials/header %>
+
+<!-- Breadcrumb -->
+<ol class="breadcrumb">
+    <li><a href="/home">Home</a></li>
+    <li class="active">Profile</li>
+</ol>
+
+<main>
+	<div class="col-md-12">
+        <div class="well">
+            <h3><span class="fa fa-user"></span> <% __('Informations') %></h3>
+
+            <% if (user) { %>
+                <p>
+                    <% for (var key in user ) { %>
+                        <% if (typeof user[key] != 'function' ) { %>
+                            <strong><%= key %></strong>: <%= user[key] %><br>
+                        <% } %>
+                    <% } %>
+                </p>
+            <% } %>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>

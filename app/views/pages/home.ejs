@@ -1,17 +1,16 @@
-<!-- views/profile.ejs -->
+<!-- views/pages/home.ejs -->
 <!doctype html>
 <html>
 <head>
-    <title>Doodle</title>
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
-    <link rel="stylesheet" href="/css/style.css">
-    <style>
-        body        { padding-top:80px; word-wrap:break-word; }
-    </style>
+    <% include ../partials/head %>
 </head>
-<body>
-<div class="container">
+<body class="container">
+
+<!-- Header -->
+<% include ../partials/header %>
+
+<!-- Content -->
+<main>
     <div class="row">
         <!-- NOTIFICATION MESSAGE -->
         <% if (notifications && notifications.length > 0) { %>
@@ -52,12 +51,6 @@
             </div>
         <% } %>
     </div>
-    <div class="row">
-        <div class="page-header text-center">
-            <h1><span class="fa fa-anchor"></span> <%= __('Profile Page') %></h1>
-            <a href="/logout" class="btn btn-default btn-sm"><%= __('Logout') %></a>
-        </div>
-    </div>
 
     <div class="row">
         <!-- ALERT MESSAGE -->
@@ -67,31 +60,33 @@
             </div>
         <% } %>
 
-        <div class="col-md-6">
-            <!-- DOODLES INFORMATIONS -->
+        <!-- DOODLES INFORMATIONS -->
+        <div class="col-md-8">
             <div class="well">
                 <h3><span class="fa fa-archive"></span> <%= __('My doodles') %></h3>
-                    <% if (doodles) { %>
-                        <ul>
-                            <% for(var key in doodles) { %>
-                                <li>
-                                    <strong><%= doodles[key].id %></strong><br>
-                                    <%= doodles[key].name %><br>
-                                    <%= doodles[key].description %><br>
-                                    <a href='/doodle/<%= doodles[key].id %>'><%= __('Access doodle') %></a><br>
-                                    <% if (doodles[key].user_statut == 'admin') { %>
-                                        <a href='/doodle/delete/<%= doodles[key].id %>'><%= __('Remove doodle') %></a>
-                                    <% } %>
-                                </li>
-                                <br>
-                            <% } %>
-                        </ul>
-                    <% } %>
+                <hr>
+                <% if (doodles) { %>
+                    <ul>
+                        <% for(var key in doodles) { %>
+                            <li>
+                                <strong><%= doodles[key].name %></strong><br>
+                                <%= doodles[key].description %><br>
+                                <a href='/doodle/<%= doodles[key].id %>'><%= __('Access doodle') %></a><br>
+                                <% if (doodles[key].user_statut == 'admin') { %>
+                                    <a href='/doodle/delete/<%= doodles[key].id %>'><%= __('Remove doodle') %></a>
+                                <% } %>
+                            </li>
+                            <br>
+                        <% } %>
+                    </ul>
+                <% } %>
                 <br>
-                <a href="/new-doodle" class="btn btn-default btn-sm"><%= __('Create doodle') %></a>
+                <a href="/new-doodle" class="btn btn-primary btn-sm"><%= __('Create doodle') %></a>
             </div>
+        </div>
 
-            <!-- PARTICIPATION REQUESTS -->
+        <!-- PARTICIPATION REQUESTS -->
+        <div class="col-md-4">
             <div class="well">
                 <h3><span class="fa fa-question"></span> <%= __('Participation requests') %></h3>
                 <% if ( participation_requests != null && participation_requests.length > 0 ) { %>
@@ -114,29 +109,16 @@
             </div>
         </div>
 
-        <!-- USER INFORMATIONS -->
-        <div class="col-md-6">
-            <div class="well">
-                <h3><span class="fa fa-user"></span> <% __('Informations') %></h3>
-
-                    <% if (user) { %>
-                        <p>
-                            <% for (var key in user ) { %>
-                                <% if (typeof user[key] != 'function' ) { %>
-                                    <strong><%= key %></strong>: <%= user[key] %><br>
-                                <% } %>
-                            <% } %>
-                        </p>
-                    <% } %>
-                    <a href="/configuration" class="btn btn-default btn-sm"><%= __('Configuration') %></a>
-            </div>
-        </div>
     </div>
-</div>
+</main>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 <!-- <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script> -->
 <script type="text/javascript" src="/js/script.js"></script>
+
+<footer class="footer" style="width: inherit;">
+    <% include ../partials/footer %>
+</footer>
 
 </body>
 </html>

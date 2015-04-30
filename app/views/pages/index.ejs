@@ -2,22 +2,15 @@
 <!doctype html>
 <html>
 <head>
-    <title>Doodle</title>
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css"> <!-- load bootstrap css -->
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css"> <!-- load fontawesome -->
-    <style>
-        body        { padding-top:80px; }
-        .footer { position: absolute; bottom: 0; height: 60px; }
-    </style>
+    <% include ../partials/head %>
 </head>
 <body>
 <div class="container">
 
-    <div class="jumbotron text-center">
-        <h1><span class="fa fa-money"></span> Doodle</h1>
+    <div class="jumbotron well-lg text-center">
+        <h1 ><span class="fa fa-money"></span> Doodle</h1>
 
         <!-- ALERT MESSAGE -->
-
         <% if (message && message.length > 0) { %>
             <div class="row">
                 <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
@@ -37,7 +30,7 @@
 
 <div class="container">
     <footer class="footer">
-        <% include ./footer %>
+        <% include ../partials/footer %>
     </footer>
 </div>
 

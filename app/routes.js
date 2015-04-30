@@ -37,7 +37,7 @@ module.exports = function (app, passport) {
             Schedule.lang = req.cookies.mylanguage;
         }
 
-    	res.render('index', {
+    	res.render('pages/index', {
             message : req.flash('message'),
             language : req.cookies.mylanguage
         });
@@ -48,12 +48,12 @@ module.exports = function (app, passport) {
     // =====================================
     // Show login form
     app.get('/login', function (req, res) {
-    	res.render('login', { message : req.flash('loginMessage')});
+    	res.render('pages/login', { message : req.flash('loginMessage')});
     });
 
     // Process the login form
     app.post('/login', passport.authenticate('local-login', {
-    	successRedirect : '/profile',	// redirect to the secure profile section
+    	successRedirect : '/home',	    // redirect to the secure home section
     	failureRedirect : '/login',		// redirect back to the login page if there is an error
     	failureFlash : true,			// allow flash messages on fail
         successFlash : true             // allow flash messages on success
@@ -66,12 +66,12 @@ module.exports = function (app, passport) {
     // =====================================
     // Show the signup form
     app.get('/signup', function (req, res) {
-    	res.render('signup', { message : req.flash('signupMessage')});
+    	res.render('pages/signup', { message : req.flash('signupMessage')});
     });
 
     // Process the signup form
     app.post('/signup', passport.authenticate('local-signup', {
-    	successRedirect : '/profile',	// redirect to the secure profile section
+    	successRedirect : '/home',	    // redirect to the secure home section
     	failureRedirect : '/signup',	// redirect back to the signup page if there is an error
     	failureFlash : true				// allow flash messages
     }));
@@ -79,11 +79,11 @@ module.exports = function (app, passport) {
 
 
     // =====================================
-    // PROFILE SECTION =====================
+    // HOME SECTION ========================
     // =====================================
     // You have to be logged in to visit
     // We use route middleware to verify the user
-    app.get('/profile', isLoggedIn, function (req, res) {
+    app.get('/home', isLoggedIn, function (req, res) {
 
         async.parallel ({
             doodles: function _getDoodlesFromUser (done) {
@@ -119,7 +119,7 @@ module.exports = function (app, passport) {
                 req.flash('message', 'An error occured : ' + err);
             }
 
-            res.render('profile', {
+            res.render('pages/home', {
                 user : req.user,
                 message : req.flash('message'),
                 doodles : results.doodles,
@@ -127,6 +127,15 @@ module.exports = function (app, passport) {
                 notifications: results.notifications
             });            
         });
+    });
+
+    // =====================================
+    // PROFILE SECTION =====================
+    // =====================================
+    app.get('/profile', function (req, res) {
+        res.render('pages/profile', {
+            user : req.user,
+        })
     });
 
 
@@ -170,7 +179,7 @@ module.exports = function (app, passport) {
                 req.flash('message', 'An error occured : ' + err);
             }
 
-            res.render('configuration', {
+            res.render('pages/configuration', {
                 user: req.user,
                 message: req.flash('message'),
                 doodles: doodles
@@ -207,7 +216,7 @@ module.exports = function (app, passport) {
                 req.flash('message', 'Configuration saved');
             }
 
-            res.redirect('/profile');
+            res.redirect('/home');
         });
     });
 
@@ -219,10 +228,10 @@ module.exports = function (app, passport) {
 
         Notification.isRead(req.user.id, req.body.notification_id, function (err, result) {
             if (err) {
-                res.send('Error', 400, err);
+                res.status('Error').send(400, err);
             }
             else {
-                res.send('Success', 200);
+                res.status('Success').send(200);
             }
         });
     });
@@ -236,7 +245,7 @@ module.exports = function (app, passport) {
     // =====================================
     // Show the doodle form
     app.get('/new-doodle', isLoggedIn, function (req, res) {
-        res.render('new-doodle');
+        res.render('pages/new-doodle');
     });
 
     // Process the doodle form
@@ -251,7 +260,7 @@ module.exports = function (app, passport) {
                 req.flash('message', 'Doodle created !');
             }
 
-            res.redirect('/profile');
+            res.redirect('/home');
         });
     });
 
@@ -273,7 +282,7 @@ module.exports = function (app, passport) {
 
                 req.flash('message', 'You are accessing this doodle without being logged in');
 
-                return res.render('doodle', {
+                return res.render('pages/doodle', {
                     doodle : doodle,
                     user_statut : 'unregistred',
                     message : req.flash('message')
@@ -289,10 +298,10 @@ module.exports = function (app, passport) {
             Doodle.getUserAccess(req.params.id, user_id, function (err, user_statut) {
                 if (err) {
                     req.flash('message', 'An error occured : ' + err);
-                    return res.redirect('/profile');
+                    return res.redirect('/home');
                 }
 
-                res.render('doodle', {
+                res.render('pages/doodle', {
                     doodle : doodle,
                     user_statut : user_statut,
                     message : req.flash('message')
@@ -357,7 +366,7 @@ module.exports = function (app, passport) {
                 req.flash('message', 'Doodle deleted !');
             }
 
-            res.redirect('/profile');
+            res.redirect('/home');
         });
     });
 
@@ -365,7 +374,7 @@ module.exports = function (app, passport) {
     // ADD PUBLIC USER IN PRIVATE DOODLE ===
     // =====================================
     app.get('/doodle/:id/add-public-user', function (req, res) {
-        res.render('add-public-user');
+        res.render('pages/add-public-user');
     });
 
     app.post('/doodle/:id/add-public-user', function (req, res) {
@@ -396,7 +405,7 @@ module.exports = function (app, passport) {
                 res.redirect('/doodle/' + req.params.id);
             }
             else {
-                res.render('add-public-vote', {
+                res.render('pages/add-public-vote', {
                     schedules : schedules
                 });
             }
@@ -426,7 +435,7 @@ module.exports = function (app, passport) {
     // ADD USER ============================
     // =====================================
     app.get('/doodle/:id/add-user', isLoggedIn, function (req, res) {
-        res.render('add-user');
+        res.render('pages/add-user');
     });
 
     // Create a new participation request
@@ -479,7 +488,7 @@ module.exports = function (app, passport) {
                 req.flash('message', 'Request deleted ! ');
             }
 
-            res.redirect('/profile');
+            res.redirect('/home');
         });
     });
 
@@ -498,7 +507,7 @@ module.exports = function (app, passport) {
             }
             else {
 
-                res.render('remove-user', {
+                res.render('pages/remove-user', {
                     users : users
                 });
             }
@@ -522,12 +531,12 @@ module.exports = function (app, passport) {
                     }
 
                     req.flash('message', 'User removed');
-                    (result) ? res.redirect('/doodle/' + doodle_id) : res.redirect('/profile');
+                    (result) ? res.redirect('/doodle/' + doodle_id) : res.redirect('/home');
                 });
             }
         ], function (err) {
             req.flash('message', 'An error occured : ' + err);
-            res.redirect('/profile');
+            res.redirect('/home');
         });
     });
 
@@ -538,7 +547,7 @@ module.exports = function (app, passport) {
     // =====================================
     // Show doodle add-schedule form
     app.get('/doodle/:id/add-schedule', isLoggedIn, function (req, res) {
-        res.render('add-schedule', {
+        res.render('pages/add-schedule', {
             lang: Doodle.lang
         });
     });
@@ -575,7 +584,7 @@ module.exports = function (app, passport) {
                 res.redirect('/doodle/' + id);
             }
             else {
-                res.render('delete-schedule', {
+                res.render('pages/delete-schedule', {
                     schedules : schedules
                 });
             }
@@ -617,7 +626,7 @@ module.exports = function (app, passport) {
                 res.redirect('/doodle/' + id);
             }
             else {
-                res.render('add-vote', {
+                res.render('pages/add-vote', {
                     schedules : schedules
                 });
             }
@@ -671,7 +680,7 @@ module.exports = function (app, passport) {
     // =====================================
     // Show the doodle form
     app.get('/new-public-doodle', function (req, res) {
-        res.render('new-public-doodle', {
+        res.render('pages/new-public-doodle', {
             message : req.flash.message
         });
     });
@@ -735,7 +744,7 @@ module.exports = function (app, passport) {
                 res.redirect('/');
             }
 
-            res.render('index-public-doodle', {
+            res.render('pages/index-public-doodle', {
                 doodle_administration_link : req.headers.host + '/public-doodle/' + req.params.admin_link_id,
                 doodle_user_link : req.headers.host + '/public-doodle/' + doodle_id
             });
@@ -762,7 +771,7 @@ module.exports = function (app, passport) {
 
                             req.session.admin_link_id = req.params.id;
 
-                            res.render('public-doodle', {
+                            res.render('pages/public-doodle', {
                                 doodle : doodle,
                                 statut : statut,
                                 message : req.flash('message')
@@ -777,7 +786,7 @@ module.exports = function (app, passport) {
                                 req.flash('message', 'An error occured : ' + err);
                             }
 
-                            res.render('public-doodle', {
+                            res.render('pages/public-doodle', {
                                 doodle : doodle,
                                 statut : statut,
                                 message : req.flash('message')
@@ -802,7 +811,7 @@ module.exports = function (app, passport) {
     // =====================================
     // Show add public user form
     app.get('/public-doodle/:id/add-public-user', function (req, res) {
-        res.render('add-public-user');
+        res.render('pages/add-public-user');
     });
 
     // Process add public user form
@@ -836,7 +845,7 @@ module.exports = function (app, passport) {
             }
             else {
 
-                res.render('remove-public-user', {
+                res.render('pages/remove-public-user', {
                     users : users
                 });                
             }
@@ -878,7 +887,7 @@ module.exports = function (app, passport) {
                 res.redirect('/public-doodle/' + req.params.id);
             }
             else {
-                res.render('add-public-vote', {
+                res.render('pages/add-public-vote', {
                     schedules : schedules
                 });
             }
