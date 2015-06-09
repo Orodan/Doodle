@@ -49,6 +49,8 @@ function doodle (name, description, user_id, callback) {
 	this.id = doodle.uuid();
 	this.name = name;
 	this.description = description;
+
+	this.created = moment();
 }
 
 /**********************************\
@@ -60,8 +62,8 @@ function doodle (name, description, user_id, callback) {
 **/
 doodle.prototype.save = function (callback) {
 
-	var query = 'INSERT INTO doodle (id, name, description) values (?, ?, ?)';
-	doodle.db.execute(query, [ this.id, this.name, this.description ], { prepare : true }, function (err) {
+	var query = 'INSERT INTO doodle (id, name, description, created) values (?, ?, ?, ?)';
+	doodle.db.execute(query, [ this.id, this.name, this.description, this.created.format() ], { prepare : true }, function (err) {
 		return callback(err);
 	});
 };
@@ -96,7 +98,7 @@ doodle.getNotifIds = function (doodle_id, callback) {
 
 		return callback(null, result.rows);
 	});
-}
+};
 
 /**
 *	Check if the doodle has still somes users left
@@ -402,49 +404,136 @@ doodle.getUsersIds = function (id, callback) {
 };
 
 /**
-*	Get all doodles from their ids and send it back in a array
+*	Get the doodles of the user and the user configuration about them
 **/
-doodle.getDoodlesFromIds = function (user_id, doodle_ids, callback) {
-	var doodles = [];
+doodle.getDoodlesFromUser = function (user_id, callback) {
 
-	doodle._processGetDoodlesFromIds(user_id, doodle_ids, doodles, 0, function (err, doodles) {
+	async.waterfall([
+		// Get the ids of the doodles of the user
+		function _getDoodleIdsFromUser (done) {
+			doodle.getDoodleIds(user_id, done);
+		},
+		function _getDoodlesAndUserInfo (doodle_ids, done) {
+
+			async.waterfall([
+				// Get the doodles from their ids
+				function _getDoodlesFromIds (end) {
+					doodle.getDoodlesFromIds(doodle_ids, end);
+				},
+				// Get user statut for every doodle
+				function _getUserStatutForEachDoodle (doodles, end) {
+
+					async.each(doodles, function (doodle, finish) {
+						User.getUserStatut(user_id, doodle.id, function (err, user_statut) {
+							if (err) {
+								return finish(err);
+							}
+
+							doodle.user_statut = user_statut.admin_statut;
+
+							return finish();
+						});
+					},
+					function (err) {
+						return end(err, doodles);
+					});
+				},
+				// Get user configuration for every doodle
+				function _getuserConfigurationForEachDoodle (doodles, end) {
+
+					async.each(doodles, function (doodle, finish) {
+						User.getConfiguration(user_id, doodle.id, function (err, user_configuration) {
+							if (err) {
+								return finish(err);
+							}
+
+							doodle.user_configuration = user_configuration;
+							return finish();
+						});
+					}, 
+					function (err) {
+						return end(err, doodles);
+					});
+
+				}
+			], function (err, doodles) {
+				if (err) {
+					return done(err);
+				}
+
+				return done(null, doodles);
+			});
+		}
+	], function (err, doodles) {
 		if (err) {
 			return callback(err);
 		}
-
 		return callback(null, doodles);
 	});
 };
 
 /**
-*	Get the base informations about all doodles of the user
+*	Get the id of the doodles of the user
 **/
-doodle.getDoodlesFromUser = function (user_id, callback) {
+doodle.getDoodleIds = function (user_id, callback) {
 
-	var query = 'SELECT doodle_id FROM Doodle.doodles_by_user WHERE user_id = ?';
-
-	// Get the doodle ids associate to the user
-	doodle.db.execute(query, [ user_id ], { prepare : true }, function (err, data) {
+	var query = 'SELECT doodle_id FROM Doodle.doodles_by_user WHERE user_id = ?'; 
+	doodle.db.execute(query, [ user_id ], { prepare : true }, function (err, result) {
 		if (err) {
 			return callback(err);
 		}
 
-		var doodle_ids = [];
+		return callback(null, result.rows);
+	});
+};
 
-		for(var key in data.rows) {
-			doodle_ids.push(data.rows[key].doodle_id);
-		}
+/**
+*	get doodles from their ids
+**/
+doodle.getDoodlesFromIds = function (doodle_ids, callback) {
 
-		// Get the doodle informations from every doodle ids
-		doodle.getDoodlesFromIds(user_id, doodle_ids, function (err, doodles) {
+	var doodles = [];
+
+	async.each(doodle_ids, function (doodle_id, done) {
+
+		var query = 'SELECT * FROM doodle WHERE id = ?';
+		doodle.db.execute(query, [ doodle_id.doodle_id ], { prepare : true }, function (err, result) {
 			if (err) {
-			
-				return callback(err);
+				return done(err);
 			}
 
-			return callback(null, doodles);
+			doodles.push(result.rows[0]);
+			return done();
 		});
+	}, function (err) {
+
+		doodle.sortDoodles(doodles, function (err) {
+			return callback(err, doodles);
+		});
+	
 	});
+};
+
+/**
+*	Sort doodle according to the creation date
+**/
+doodle.sortDoodles = function (doodles, callback) {
+
+		doodles.sort(function (doodle1, doodle2) {
+			doodle1.created = moment(doodle1.created);
+			doodle2.created = moment(doodle2.created);
+
+			if (doodle1.created > doodle2.created) {
+				return -1;
+			}
+			else if (doodle1.created < doodle2.created) {
+				return 1;
+			}
+
+			return 0;
+		});
+
+		return callback();
 };
 
 /**
@@ -530,16 +619,16 @@ doodle.saveVotes = function (doodle_id, user_id, params, callback) {
 /**
 *	Add a new schedule to the doodle
 **/
-doodle.addSchedule = function (doodle_id, params, callback) {
+doodle.addSchedule = function (doodle_id, _begin_date, _end_date, callback) {
 
 	switch (doodle.lang) {
 		case 'en':
-			var begin_date = moment(params.begin_date);
-			var end_date = moment(params.end_date);
+			var begin_date = moment(_begin_date);
+			var end_date = moment(_end_date);
 			break;
 		case 'fr':
-			var begin_date = moment(params.begin_date, 'DD/MM/YYYY hh:mm');
-			var end_date = moment(params.end_date, 'DD/MM/YYYY hh:mm');
+			var begin_date = moment(_begin_date, 'DD/MM/YYYY hh:mm');
+			var end_date = moment(_end_date, 'DD/MM/YYYY hh:mm');
 			break;
 		default: break;
 	}
@@ -855,22 +944,23 @@ doodle.associateDoodleUser = function (id, user_id, callback) {
 /**
 *	Add for each schedules of the doodle new undecied votes to the user 
 **/
-doodle.addDefaultVotesToUser = function (id, user_id, callback) {
+doodle.addDefaultVotesToUser = function (doodle_id, user_id, callback) {
 
-	// We get the schedules
-	doodle.getSchedules(id, function (err, schedules) {
-		if (err) {
-			return callback(err);
+	async.waterfall([
+		function _getSchedules (done) {
+			doodle.getSchedules(doodle_id, done);
+		},
+		function _addDefaultVotesToUser (schedules, done) {
+			
+			async.each(schedules, function (schedule, end) {
+				Vote.generateDefaultVote(user_id, doodle_id, schedule.id, end);
+			}, 
+			function (err) {
+				return done(err);
+			});
 		}
-
-		// We create the new votes
-		doodle.__processAddDefaultVotesToUser(id, user_id, schedules, 0, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
-
-			return callback(null, true);
-		});
+	], function (err) {
+		return callback(err);
 	});
 };
 
@@ -997,29 +1087,19 @@ doodle.deleteVotes = function (id, callback) {
 **/
 doodle.deleteSchedule = function (id, schedule_id, callback) {
 
-	// Remove the association doodle-schedule
-	var query = 'DELETE FROM Doodle.schedules_by_doodle WHERE doodle_id = ? AND schedule_id = ?';
-	doodle.db.execute(query, [ id, schedule_id ], { prepare : true }, function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		// Delete the schedule itself
-		query = 'DELETE FROM Doodle.schedule WHERE id = ?';
-		doodle.db.execute(query, [ schedule_id ], { prepare : true }, function (err, result) {
-			if (err) {
-				return callback(err);
-			}
-
-			// Delete all the votes associated with the schedule in the doodle
-			doodle.deleteVotesOfSchedule(id, schedule_id, function (err, result) {
-				if (err) {
-					return callback(err);
-				}
-
-				return callback(null, true);
+	async.parallel([
+		// Delete the schedule and its association with the doodle
+		function _deleteSchedule (done) {
+			Schedule.delete(id, schedule_id, done);
+		},
+		// Delete all the votes associated with the schedule in the doodle
+		function _deleteVotesOfSchedule (done) {
+			doodle.deleteVotesOfSchedule(id, schedule_id, function (err) {
+				return done(err);
 			});
-		});
+		}
+	], function (err) {
+		return callback(err);
 	});
 };
 
@@ -1461,45 +1541,6 @@ doodle.deleteDoodle = function (id, callback) {
 
 
 // INTERNAL FUNCTIONS ===============================================================
-
-/**
-*	Recursive function to get all the doodles from an array of ids
-*	( Table doodle)
-**/
-doodle._processGetDoodlesFromIds = function (user_id, doodle_ids, doodles, key, callback) {
-
-	if ( doodles.length != doodle_ids.length ) {
-		var query = 'SELECT * FROM Doodle.doodle WHERE id = ?';
-
-		var doodle_id = doodle_ids[key];
-
-		doodle.db.execute(query, [ doodle_id ], { prepare : true }, function (err, data) {
-			if (err) {
-				return callback(err);
-			}
-
-			var doodle_data = data.rows[0];
-
-			// We get the statut of the user about the doodle
-			query = 'SELECT admin_statut FROM Doodle.users_by_doodle WHERE doodle_id = ? AND user_id = ?';
-			doodle.db.execute(query, [ doodle_id, user_id ], { prepare : true }, function (err, user_data) {
-				if (err) {
-					return callback(err);
-				}
-
-				doodle_data.user_statut = user_data.rows[0].admin_statut;
-
-				doodles.push(doodle_data);
-				key++;
-				doodle._processGetDoodlesFromIds(user_id, doodle_ids, doodles, key, callback);
-			});
-
-		});
-	}
-	else {
-		return callback(null, doodles);
-	}
-};
 
 /**
 *	Recursive function to get all the schedules from an array of ids

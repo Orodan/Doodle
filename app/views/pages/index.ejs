@@ -5,34 +5,281 @@
     <% include ../partials/head %>
 </head>
 <body>
+
 <div class="container">
+    <div class="starter-template">
 
-    <div class="jumbotron well-lg text-center">
-        <h1 ><span class="fa fa-money"></span> Doodle</h1>
+        <main>
+            <div class="main-titles well col-md-4">
+                <h1><i class="fa fa-calendar"></i> <%= __('Doodle') %></h1>
 
-        <!-- ALERT MESSAGE -->
-        <% if (message && message.length > 0) { %>
-            <div class="row">
-                <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
-                    <%= message %>
-                </div>
+                <article>
+                    <section class="row col-3">
+                        <a href="#" data="main-login"><h4 class="is-focused"><%= __('CONNECTION') %> <i class="fa fa-chevron-right" style="float: right;"></i></h4></a>
+                        <p><%= __('Connect and manage all your doodles') %></p>
+                    </section>
+                    <section class="row col-3">
+                        <a href="#" data="main-signup"><h4><%= __('SIGN UP') %> <i class="fa fa-chevron-right" style="float: right;"></i></h4></a>
+                        <p><%= __("Sign up and benefit from all the application's features"); %></p>
+                    </section>
+                    <section class="row col-3">
+                        <a href="#" data="main-public-doodle"><h4><%= __('CREATE PUBLIC DOODLE') %> <i class="fa fa-chevron-right" style="float: right;"></i></h4></a>
+                        <p><%= __('Create directly a doodle without inscription and share it with your friends ')%></p>
+                    </section>
+                </article>
+
+                <% if (typeof language != 'undefined') { %>
+                    <section class="language">
+                        <a href="#" id="display-language"><h5><%= __('Language : ') %><%= language %><i id="chevron" class="fa fa-chevron-right" style="float: right;"></i></h5></a>
+                        <div id="languages" class="hidden">
+                            
+                                <ul>
+                                    <% if (language === 'en') { %>
+                                        <li data='en' class="lang active"><%= __('English') %></li>
+                                    <% } else { %>
+                                        <li data='en' class="lang"><%= __('English') %></li>
+                                    <% } %>
+
+                                    <% if (language === 'fr') { %>
+                                    <li class="lang active" data='fr'><%= __('French') %></li>
+                                    <% } else { %>
+                                        <li data='fr' class="lang"><%= __('French') %></li>
+                                    <% } %>
+                                </ul>
+                        </div>
+                    </section>
+                <% } %>
             </div>
-        <% } %>
 
-        <p><%= __('Login or Register with') %>:</p>
+            <!-- CONNEXION -->
+            <div class="main-form col-md-8">
 
-        <a href="/login" class="btn btn-default"><span class="fa fa-user"></span> <%= __('Login') %></a>
-        <a href="/signup" class="btn btn-default"><span class="fa fa-user"></span> <%= __('Signup')%></a><br><br>
-        <a href="/new-public-doodle" class="btn btn-default"><span class="fa fa-user"></span> <%= __('Create a public doodle') %></a>
+                <div id="main-login">
+                    <form action="/login" method="POST" class="login-form">
+
+                        <div class="form-title">
+                            <h2> <i class="fa fa-user"></i> <%= __('Login') %></h2>
+                        </div>
+
+                        <div class="fields">
+                            <div class="field">
+                                <label for="email" class="field-label"><%= __('Email') %><i class="fa fa-envelope-o" style="float: right;"></i></label>
+                                <input type="text" class="field-input" name="email" id="email"/>
+                            </div>
+
+                            <div class="field">
+                                <label for="password" class="field-label"><%= __("Password"); %><i class="fa fa-lock" style="float: right;"></i></label>
+                                <input type="password" class="field-input" name="password" id="password"/>
+                            </div>
+                        </div>
+
+                        <div class="form-submit">
+                            <button class="form-button" type="submit"><%= __('Connexion') %></button>
+                        </div>
+
+                    </form>
+                </div>
+
+                <div id="main-signup" class="hidden">
+
+                    <form action="/signup" method="POST" class="login-form">
+
+                        <div class="form-title">
+                            <h2> <i class="fa fa-user"></i> <%= __('Sign Up') %></h2>
+                        </div>
+
+                        <div class="fields">
+                            <div class="field">
+                                <label for="email" class="field-label"><%= __('Email') %><i class="fa fa-envelope-o" style="float: right;"></i></label>
+                                <input type="text" class="field-input" name="email" id="email"/>
+                            </div>
+
+                            <div class="field">
+                                <label for="first_name" class="field-label"><%= __('First Name') %><i class="fa fa-user" style="float: right;"></i></label>
+                                <input type="text" class="field-input" name="first_name" id="first_name"/>
+                            </div>
+
+                            <div class="field">
+                                <label for="last_name" class="field-label"><%= __('Last Name') %><i class="fa fa-user" style="float: right;"></i></label>
+                                <input type="text" class="field-input" name="last_name" id="last_name"/>
+                            </div>
+
+                            <div class="field">
+                                <label for="password" class="field-label"><%= __('Password') %><i class="fa fa-lock" style="float: right;"></i></label>
+                                <input type="password" class="field-input" name="password" id="password"/>
+                            </div>
+                        </div>
+
+                        <div class="form-submit">
+                            <button class="form-button" type="submit"><%= __('Connexion') %></button>
+                        </div>
+
+                    </form>
+
+                </div>
+
+                <div id="main-public-doodle" class="hidden">
+
+                    <form action="/new-public-doodle" method="POST" class="login-form">
+
+                        <div id="doodle-name-description">
+
+                            <div class="form-title">
+                                <h2> <i class="fa fa-calendar"></i> <%= __('Public Doodle') %></h2>
+                            </div>
+
+                            <div class="fields">
+                                <div class="field">
+                                    <label for="name" class="field-label"><%= __('Name') %><i class="fa fa-bars" style="float: right;"></i></label>
+                                    <input type="text" class="field-input" name="name" id="name"/>
+                                </div>
+
+                                <div class="field">
+                                    <label for="description" class="field-label"><%= __('Description') %><i class="fa fa-archive" style="float: right;"></i></label>
+                                    <input type="textarea" class="field-input" name="description" id="description"/>
+                                </div>
+                            </div>
+
+                            <div class="form-submit">
+                                <button class="form-button" id="btn-doodle-name-description"><%= __('Next') %></button>
+                            </div>
+
+                        </div>
+
+                        <div id="doodle-schedules" class="hidden">
+
+                            <div class="form-title">
+                                <h2> <i class="fa fa-calendar"></i> <%= __('Public Doodle') %></h2>
+                                <h3><%= __('Choose your schedules') %></h3>
+                            </div>
+
+                            <div class="fields" id="public-schedules">
+                                <div class="field">
+                                    <div class="form-group">
+                                        <div id="datetimepicker1" class="input-group date">
+                                            <label for="begin_date" class="field-label"><%= __('Begin date') %></label>
+                                            <input type="text" class="field-input" name="schedules[0][begin_date]" id="begin_date"/>
+                                            <span class="input-group-addon">
+                                                 <span class="fa fa-calendar"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <div class="form-group">
+                                        <div id="datetimepicker2" class="input-group date">
+                                            <label for="end_date" class="field-label"><%= __('End date') %></label>
+                                            <input type="text" class="field-input" name="schedules[0][end_date]" id="end_date"/>
+                                            <span class="input-group-addon">
+                                                 <span class="fa fa-calendar"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-submit">
+                                <button type="button" class="form-button" id="add-schedule"><%= __('Add schedule') %></button>
+                            </div>
+
+                            <br/>
+
+                            <div class="form-submit">
+                                <button id="btn-previous" class="form-button"><%= __('Previous') %></button>
+                                <button type="submit" class="form-button"><%= __('Submit') %></button>
+                            </div>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+
+        </main>
+
     </div>
 
-</div>
-
-<div class="container">
-    <footer class="footer">
+    <footer class="footer" style="width: inherit;">
         <% include ../partials/footer %>
     </footer>
 </div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="./js/moment.js"></script>
+<script src="./js/bootstrap-datetimepicker.min.js"></script>
+<script src="./js/index.js"></script>
+<script type="text/javascript">
+
+    $(function () {
+        $('#datetimepicker1').datetimepicker({
+            debug: true
+        });
+        $('#datetimepicker2').datetimepicker({
+            debug: true
+        });
+    });
+
+    /** Add another schedule **/
+
+    var nbInputs = 1;
+    var nbDatePicker = 2;
+
+    $(document).on('click', '#add-schedule', function (e) {
+        // Stop the redirection
+        e.preventDefault();
+
+        // Show inputs date fields
+        var inputs = 	'<div class="field"> \
+                            <div class="form-group"> \
+                                <div class="input-group date" id="datetimepicker' + (nbDatePicker + 1) + '"> \
+                                    <label for="begin_date" class="field-label"><%= __("Begin date") %></label> \
+                                    <input type="text" class="field-input" name="schedules[' + nbInputs + '][begin_date]" id="begin_date"/> \
+                                    <span class="input-group-addon"> \
+                                        <span class="fa fa-calendar"></span> \
+                                    </span> \
+                                </div> \
+                            </div> \
+                        </div>\
+                            \
+                        <div class="field"> \
+                            <div class="form-group"> \
+                                <div class="input-group date" id="datetimepicker' + (nbDatePicker + 2) + '"> \
+                                    <label for="end_date" class="field-label"><%= __("End date") %></label> \
+                                    <input type="text" class="field-input" name="schedules[' + nbInputs + '][end_date]" id="end_date" /> \
+                                    <span class="input-group-addon"> \
+                                        <span class="fa fa-calendar"></span> \
+                                    </span> \
+                                </div> \
+                            </div> \
+                        </div>';
+
+        $('#public-schedules').append(inputs);
+
+        for(var i = nbDatePicker; i < nbDatePicker + 3; i++) {
+
+            $('#datetimepicker' + i).datetimepicker({
+                debug: true
+            });
+        }
+
+        nbInputs++;
+        nbDatePicker += 2;
+
+        // If too much schedules on the form, we set a scroll bar (overflow-y: auto;)
+        // We do it only after adding a few schedules because otherwise the overflow-y: auto disturbed the display
+        // of the datetimepicker widget
+        if (nbDatePicker > 4) {
+            $('.fields').css('overflow-y', 'auto');
+        }
+    });
+
+</script>
 
 </body>
 </html>

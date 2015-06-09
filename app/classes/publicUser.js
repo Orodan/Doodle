@@ -1,6 +1,7 @@
 var util = require('util');
 var user = require('./user');
 var async = require('async');
+var Vote = require('./vote');
 
 function publicUser (first_name, last_name) {
 
@@ -11,7 +12,7 @@ function publicUser (first_name, last_name) {
 
 util.inherits(publicUser, user);
 
-publicUser.prototype.save = function (doodle_id, callback) {
+publicUser.prototype.save = function (doodle_id, votes, callback) {
 
 	async.series([
 		function (done) {
@@ -38,6 +39,21 @@ publicUser.prototype.save = function (doodle_id, callback) {
 				}
 				
 				return done(null, result);
+			});
+		}.bind(this),
+
+		function (done) {
+
+			var user_id = this.id;
+
+			// We save votes for this user
+			async.each(votes, function (_vote, end) {
+
+				var vote = new Vote(doodle_id, user_id, _vote.schedule_id, _vote.vote);
+				vote.save(end);
+
+			}, function (err) {
+				return done(err);
 			});
 		}.bind(this)
 	], function (err, results) {

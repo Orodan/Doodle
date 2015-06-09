@@ -1,143 +1,243 @@
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+body {
+  padding: 50px;
+  padding-bottom: 60px;
+  font: 14px;
+  font-family: 'Lato', Calibri, Arial, sans-serif;;
+}
+
+a {
+  color: #00B7FF;
 }
 
 .horiz-scroll {
-    overflow: auto;
+  overflow: auto;
 }
 
 /** TABLE **/
 
 table {
-    display: table;
-    max-width: 100%;
+  position: relative;
+  display: table;
+  max-width: 100%;
+  margin-top: 50px;
 
-    border-color: gray;
-    background-color: transparent;
+  margin-left: auto;
+  margin-right: auto;
+
+  border-color: gray;
+  background-color: transparent;
 }
 
 table.poll {
-    border-collapse: separate;
-    border-spacing: 0;
-    position: relative;
+  border-collapse: separate;
+  border-spacing: 0;
+  position: relative;
 }
 
 table.poll th {
-    font-size: 13px;
-    line-height: 20px;
-    font-weight: normal;
+  font-size: 15px;
+  line-height: 23px;
+  font-weight: bold;
 
-    width: 150px;
-    min-width: 50px;
+  padding: 15px 0;
 }
 
 table.poll tr.date th {
-    background: #2fa4e7;
-    color: #fff;
+  background: #f79719;
+  color: #fff;
 }
 
 table.poll tr.header th {
-    padding: 0 10px 0;
+  /**padding: 0 10px 0;**/
 }
 
 /** MONTH **/
 
 table.poll tr.date.month th {
-    padding-top: 7px;
-    padding-bottom: 3px;
+  border: 3px solid #fff;
+  font-size: 20px;
+  height: 100px;
 }
 
 /** DAY **/
 
 table.poll tr.date.day th {
-    padding-bottom: 6px;
-    padding-right: 10px;
+  /**padding-bottom: 6px;
+  padding-right: 10px;**/
+  font-size: 18px;
+  border: 3px solid #fff;
+
+  height: 75px;
 }
 
 /** TIME **/
 
 table.poll tr.time th {
-    padding-top: 11px;
-    padding-right: 10px;
-    padding-left: 10px;
-    padding-bottom: 8px;
-    font-size: 12px;
-    color: #323232;
-    background-color: #f5f5f5;
-    text-align: center;
+  padding-top: 11px;
+  padding-right: 13px;
+  padding-bottom: 8px;
+  font-size: 16px;
+  color: #f79719;
+  background-color: #ececec;
+  border: 3px solid #fff;
+}
+
+table.poll tr.time th.nonHeader {
+  background-color: transparent;
 }
 
 tr {
-    display: table-row;
-    vertical-align: inherit;
-    border-color: inherit;
+  display: table-row;
+  vertical-align: inherit;
+  border-color: inherit;
 }
 
 th {
-    text-align: left;
+  text-align: left;
 }
 
 td, th {
-    display: table-cell;
-    vertical-align: inherit;
+  display: table-cell;
+  vertical-align: inherit;
 }
 
 /** PARTICIPANT **/
 
 table.poll tr.participant td.pname {
-    position: relative;
-    min-width: 180px;
-    width: 180px;
-    border-top: 1px solid #fff;
-    border-bottom: 2px solid #fff;
-    padding: 0 5px 0 5px;
-    border-right: 5px solid #fff;
+  position: relative;
+  min-width: 180px;
+  width: 180px;
+  height: 55px;
+ 
+  padding: 0 10px 0 10px;
 
-    background-color: #f5f5f5;
+  font-size: 16px;
+  font-weight: bold;
+
+  color: #f79719;
+  background-color: #ececec;
+  border: 3px solid #fff;
 }
 
 table.poll tr.participant td {
-    margin-left: 3px;
-    font-size: 15px;
-    padding: 8px 0 5px 0;
-    vertical-align: middle;
-    overflow: hidden;
+  margin-left: 3px;
+  font-size: 15px;
+  padding: 8px 0 5px 0;
+  vertical-align: middle;
+  overflow: hidden;
 }
 
 /** VOTE **/
 table.poll tr.participant td.n {
-    color: #a94442;
-    background-color: #f2dede;
+  color: #a94442;
+  background-color: #f2dede;
 }
 
 table.poll tr.participant td.y {
-    color: #5cb85c;
-    background-color: #dff0d8;
+  color: #5cb85c;
+  background-color: #dff0d8;
 }
 
 table.poll tr.participant td.u {
-    color: #8a6d3b;
-    background-color: #fcf8e3;
+  color: #8a6d3b;
+  background-color: #fcf8e3;
 }
 
 table.poll tr.participant td.partTableCell {
-    border-right: 2px solid #fff;
-    text-align: center;
+  border: 3px solid #fff;
+  text-align: center;
 }
 
-table.poll th {
-    border-right: 2px solid #fff;
+table.poll tr.date.month th.nonHeader {
+  background: transparent;
+  border: none;
 }
 
-table.poll th:last-child {
-    border-right: none;
+table.poll tr.date.day th.nonHeader {
+  background: transparent;
+  border: none;
 }
 
-table.poll tr.participant td.partTableCell:last-child {
-    border-right: none;
+/** CLOSE ICON **/
+
+/** For schedule **/
+table th[class*=col-] {
+  position: relative;
 }
 
-table.poll tr th.nonHeader {
-    background: #fff;
+table th[class*=col-] .close-icon{
+  top: 3px;
+  right: 5px;
 }
+
+/** For user **/
+.pname .close-icon {
+  top: 12px;
+  right: 10px;
+}
+
+/** VERTICAL NAVBAR **/
+
+/* make sidebar nav vertical */ 
+
+.sidebar-nav {
+  position: absolute;
+  left: 0;
+  top: 50px;
+  bottom: 0;
+}
+
+.sidebar-nav .navbar .navbar-collapse {
+  padding: 0;
+  max-height: none;
+}
+
+.sidebar-nav .navbar ul {
+  float: none;
+}
+
+.sidebar-nav .navbar ul:not {
+  display: block;
+}
+
+.sidebar-nav .navbar li {
+  float: none;
+  display: block;
+}
+
+.sidebar-nav .navbar li a {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/** BTN ADD SCHEDULE **/
+
+.invated_user td.pname {
+  color: #999;
+}
+
+.invated_user tr.participant {
+  display: none;
+}
+
+.btn-save-votes {
+  margin-right: 30px;
+}
+
+.add-schedule {
+  position: relative;
+  width: 100%;
+}
+
+.add-schedule .close-icon {
+  position: absolute;
+  right: -8%;
+  top: 65px;
+}
+
+
 

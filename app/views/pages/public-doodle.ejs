@@ -1,96 +1,274 @@
+<!-- views/pages/doodle.ejs -->
 <!doctype html>
-<html lang="fr">
+<html>
 <head>
-    <meta charset="utf-8">
-    <title>Doodle</title>
-
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css"> <!-- load bootstrap css -->
-
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">  <!-- load fontawesome -->
-
-    <link rel="stylesheet" href="/css/style.css">  
-
-    <style>
-        body { padding-top: 80px; }
-    </style>
+    <% include ../partials/head %>
 </head>
 <body>
-    <div class="container">
 
-        <nav class="navbar navbar-default">
-            <div class="container-fluid">
-                <div class="navbar-header">
-                    <a class="navbar-brand" href="/profile">Doodle</a>
-                </div>
-                <div>
-                    <ul class="nav navbar-nav">
-                        <li><a href='<%= doodle.id %>/add-public-user'><%= __('Add user') %></a></li>
-                        <% if (statut == 'administrator') { %>
-                            <li><a href='<%= doodle.id %>/remove-public-user'><%= __('Remove user') %></a></li>
-                            <li><a href='<%= doodle.id %>/remove-public-doodle'><%= __('Remove doodle') %></a></li>
-                        <% } %>
-                    </ul>
-                </div>
-            </div>
-        </nav>
+<!-- Header -->
+<% include ../partials/header %>
 
-        <% if (message.length > 0) { %>
-            <div class="col-sm-6 col-sm-offset-3 alert alert-info" role="alert">
-                <%= message %>
-            </div>
-        <% } %>
+<!-- Vertical navbar -->
 
-        <!-- DOODLE DATA -->
-        <% if (doodle) { %>
-        <div class="col-md-12 jumbotron table-responsive horiz-scroll">
-            <table class="table table-condensed">
-                <thead>
-                    <!-- Display date (day, month, year) -->
-                    <tr>
-                        <th></th>
-                        <% for (var key in doodle.schedules) { %>
-                            <% if ( doodle.schedules[key].begin_date.toDateString() === doodle.schedules[key].end_date.toDateString() ) { %>
-                                <th colspan=2 class="col-md-2" scope="col"><%= doodle.schedules[key].begin_date.toDateString() %></th>
-                            <% } else { %>
-                                <th class="col-md-1" scope="col"><%= doodle.schedules[key].begin_date.toDateString() %></th>
-                                <th class="col-md-1" scope="col"><%= doodle.schedules[key].end_date.toDateString() %></th>
-                            <% } %>
-                        <% } %>
-                    </tr>
-                    <!-- Display schedule (minute, hour) -->
-                    <tr>
-                        <th></th>
-                        <% for (var key in doodle.schedules) { %>
-                                <th class="col-md-2" scope="col"><%= doodle.schedules[key].begin_date.toTimeString() %> </th>
-                                <th class="col-md-2" scope="col"><%= doodle.schedules[key].end_date.toTimeString() %> </th> 
-                        <% } %>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% for (var key in doodle.users) { %>
-                        <tr>
-                            <td class="vert-align" scope="row"><%= doodle.users[key].first_name %> <%= doodle.users[key].last_name %></td>
-                            <% for ( var key2 in doodle.users[key].votes ) { %>
-                                <% if ( doodle.users[key].votes[key2].vote == -1 ) { %>
-                                        <td colspan=2 class="smal"><div class="alert alert-danger vert-align"><span class="fa fa-frown-o"></span> <%= __('Not available') %></div></td>
-                                    <% } %>
-                                    <% if ( doodle.users[key].votes[key2].vote == 0 ) { %>
-                                        <td colspan=2 class="smal"><div class="alert alert-warning vert-align"><span class="fa fa-meh-o"></span> <%= __('Do not know') %></div></td>
-                                    <% } %>
-                                    <% if ( doodle.users[key].votes[key2].vote == 1 ) { %>
-                                        <td colspan=2 class="smal"><div class="alert alert-success vert-align"><span class="fa fa-smile-o"></span> <%= __('Available') %></div></td>
-                                    <% } %>
-                            <% } %>
-                        </tr>
+
+<!-- DOODLE -->
+<div class="container-fluid">
+    <div class="starter-template" style="padding-top: 60px;">
+        <main class="col-md-12" style="margin-bottom: 60px;">
+
+            <% var nbMonths = 0 %>
+            <% for (var _month in doodle.schedules) { %>
+                <% nbMonths++ %>
+            <% } %>
+
+            <% var nbDays = 0 %>
+            <% for (var _month in doodle.schedules) { %>
+                <% for (var _day in doodle.schedules[_month]) { %>
+                    <% nbDays++ %>
+                <% } %>
+            <% } %>
+
+            <% var nbSchedules = 0 %>
+            <% for (var _month in doodle.schedules) { %>
+                <% for (var _day in doodle.schedules[_month]) { %>
+                    <% for (var _schedule in doodle.schedules[_month][_day]) { %>
+                        <% nbSchedules++ %>
                     <% } %>
-                </tbody>
-            </table>
-        </div>
-        <% } %>
+                <% } %>
+            <% } %>
 
+            <div class="main-horiz-scroll">
+
+                <!-- No schedule set -->
+                <% if (nbSchedules === 0) { %>
+
+                    <h2>Hello</h2>
+                    <p>You currently have no schedule set, start by setting a schedule <a class="text-link" id="btn-show-modal" href="#" data-toggle="modal" data-target="#myModal">here</a></p>
+
+                <% } else { %>
+
+                <div class="container">
+
+                    <table cellpading="0" cellspacing="0" class="poll">
+                        <thead>
+                            
+                            <!-- MONTH AND YEAR -->
+                            <tr class="header date month">
+                                <th class="nonHeader"></th>
+                                <% for (var _month in doodle.schedules) { %>
+                                    <% var nbSchedulesPerMonth = 0 %>
+                                    <% for (var _day in doodle.schedules[_month]) { %>
+                                        <% for (var _schedule in doodle.schedules[_month][_day]) { %>
+                                            <% nbSchedulesPerMonth++ %>
+                                        <% } %>
+                                    <% } %>
+                                    <th colspan="<%= nbSchedulesPerMonth %>" class="text-center col-md-<%= Math.floor(10 / nbMonths) %>"><%= _month %></th>
+                                <% } %>
+                            </tr>
+
+                            <!-- DAY -->
+                            <tr class="header date day">
+                                <th class="nonHeader"></th>
+                                <% for (var _month in doodle.schedules) { %>
+                                    <% for (var _day in doodle.schedules[_month]) { %>
+                                        <% var nbSchedulesPerDay = 0 %>
+                                        <% for (var _schedule in doodle.schedules[_month][_day]) { %>
+                                            <% nbSchedulesPerDay++ %>
+                                        <% } %>
+                                        <th colspan="<%= nbSchedulesPerDay %>"  class="text-center col-md-<%= Math.floor(10 / nbDays) %>"><%= _day %></th> 
+                                    <% } %>
+                                <% } %>
+                            </tr>
+
+                            <!-- HOURS -->
+                            <tr class="header time">
+                                <th class="nonHeader"></th>
+                                <% for (var _month in doodle.schedules) { %>
+                                    <% for (var _day in doodle.schedules[_month]) { %>
+                                        <% for (var _time in doodle.schedules[_month][_day]) { %>
+                                            <th colspan="1" class="schedule text-center col-md-<%= Math.floor(10 / nbSchedules) %>"><%= doodle.schedules[_month][_day][_time].begin_time %> <br /> <%= doodle.schedules[_month][_day][_time].end_time %> 
+                                                <% if (user.statut == 'admin') { %>
+                                                    <a class="close-icon" data="schedule" id="<%= doodle.schedules[_month][_day][_time].id %>" href="#"><i class='fa fa-times'></i></a>
+                                                <% } %>
+                                            </th>
+                                        <% } %>
+                                    <% } %>
+                                <% } %>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <% for (var key in doodle.users) { %>
+                                <% var _user = doodle.users[key]; %>
+
+                                <!-- Vote -->
+                                <tr class="participant">
+                                    <td class="pname"><%= _user.first_name %> <%= _user.last_name %>
+                                        <% if (user.statut == 'admin') { %>
+                                            <a class="close-icon" data="user" id="<%= _user.id %>" href="#"><i class='fa fa-times'></i></a>
+                                        <% } %>
+                                    </td>
+
+                                    <input type="hidden" value="<%= user.id %>" id="current_user_id" />
+
+                                    <% for (var key2 in doodle.users[key].votes) { %>
+                                        <% var vote = doodle.users[key].votes[key2]; %>
+                                        <% if (_user.id.equals(user.id)) { %>
+
+                                            <!-- Current user -->
+                                            <% if (vote.vote == -1) { %>
+                                                <!-- Negative vote -->
+                                                <td class="partTableCell n"><input class="input_vote" type="checkbox" name="<%= vote.schedule_id%>"></td>
+                                            <% } else if (vote.vote == 1) { %>
+                                                <!-- Positive vote -->
+                                                <td class="partTableCell y"><input class="input_vote" type="checkbox" checked="checked" name="<%= vote.schedule_id%>"></td>
+                                            <% } else { %>
+                                                <!-- Null vote -->
+                                                <td class="partTableCell u"><input class="input_vote" type="checkbox" name="<%= vote.schedule_id%>"></td>
+                                            <% } %>
+
+                                        <% } else { %>
+
+                                            <% if (vote.vote == -1) { %>
+                                                <!-- Negative vote -->
+                                                <td class="partTableCell n"><i class="fa fa-times fa-lg"></i></td>
+                                            <% } else if (vote.vote == 1) { %>
+                                                <!-- Positive vote -->
+                                                <td class="partTableCell y"><i class="fa fa-check-square-o fa-lg"></i></td>
+                                            <% } else { %>
+                                                <!-- Null vote -->
+                                                <td class="partTableCell u"><i class="fa fa-question fa-lg"></i></td>
+                                            <% } %>
+
+                                        <% } %>
+                                    <% } %>
+                                </tr>
+                            <% } %>
+
+                            <% if ( typeof doodle.participation_requests != 'undefined' && doodle.participation_requests.length > 0 ) { %>
+                                    <tr class="participant" style="height: 50px;">
+                                        <td class="pname"></td>
+                                        <% for (var i = 0; i < nbSchedules; i++) { %>
+                                            <td class=""></td>
+                                        <% } %>
+                                    </tr>
+                                <% for (var key in doodle.participation_requests) { %>
+                                    <% var invated_user = doodle.participation_requests[key]; %>
+                                        <tr class="participant invated_user">
+                                            <td class="pname"><%= invated_user.first_name %> <%= invated_user.last_name %> (invated)</td>
+
+                                            <% for (var i = 0; i < nbSchedules; i++) { %>
+                                                <td class="partTableCell u"><i class="fa fa-question fa-lg"></i></td>
+                                            <% } %>
+                                        </tr>
+                                <% } %>
+                            <% } %>
+
+                            <tr class="participant">
+                                <td class="pname">
+                                    <input type="email" name="public-user" class="form-control" id="public-user-name" placeholder="Public user" style="width: 80%; height: 25px;"/>
+                                    <a class="close-icon" id="new-public-user" href="#"><i class="fa fa-check"></i></a>
+                                </td>
+
+                                <% for (var _month in doodle.schedules) { %>
+                                    <% for (var _day in doodle.schedules[_month]) { %>
+                                        <% for (var _schedule in doodle.schedules[_month][_day]) { %>
+                                            <td class="partTableCell u"><input class="input_vote_public_user" type="checkbox" name="<%= doodle.schedules[_month][_day][_schedule].id%>"></td>
+                                        <% } %>
+                                    <% } %>
+                                <% } %>
+                            </tr>
+                            
+                        </tbody>
+
+                        <!-- Button trigger modal -->
+                        <% if (user.statut == 'admin') { %>
+                            <div class="add-schedule">
+                                <a class="close-icon pull-right" id="btn-show-modal" href="#" data-toggle="modal" data-target="#myModal"><i class="fa fa-plus-square fa-4x"></i></a>
+                            </div>
+                        <% } %>
+                    </table>
+
+                </div>
+
+                <% } %>
+
+                <!-- Modal -->                    
+                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="popup-content">
+                        <a class="close-icon btn-close-modal" data-dismiss="modal" href="#"><i class='fa fa-times'></i></a>
+                        <div class="popup-title">
+                            <h3>Add schedule</h3>
+                        </div>
+                        <div class="popup-form">
+
+                            <form action="#" method="POST">
+
+                                <div class="form-group">
+                                    <div class="col-sm-10 col-sm-offset-1">
+                                        <div class='input-group date' id='datetimepicker1'>
+                                            <input id="begin_date" type='text' class="form-control" name="begin_date" placeholder="<%= __('Begin date'); %>"/>
+                                            <span class="input-group-addon">
+                                                <span class="glyphicon glyphicon-calendar"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-sm-10 col-sm-offset-1">
+                                        <div class='input-group date' id='datetimepicker2'>
+                                            <input id="end_date" type='text' class="form-control" name="end_date" placeholder="<%= __('End date'); %>"/>
+                                            <span class="input-group-addon">
+                                                <span class="glyphicon glyphicon-calendar"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-center">
+                                    <button id="btn-add-schedule" class="btn">Envoyer</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!-- End modal -->
+
+                <br/>
+                    
+            </div>
+
+        </main>
     </div>
+</div>
+<!-- END DOODLE -->
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-    <script type="text/javascript" src="/js/script.js"></script>
+<footer class="footer" style="width: 100%;">
+    <% include ../partials/footer %>
+</footer>
+
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/js/moment.js"></script>
+<script type="text/javascript" src="/js/script.js"></script>
+<script type="text/javascript" src="/js/doodle.js"></script>
+<script type="text/javascript" src="/js/bootstrap-datetimepicker.min.js"></script>
+<script type="text/javascript" src="/js/fr.js"></script>
+
+<script type="text/javascript">
+
+    $(function () {
+        $('#datetimepicker1').datetimepicker({
+            locale: '<%= lang %>'
+        });
+        $('#datetimepicker2').datetimepicker({
+            locale: '<%= lang %>'
+        });
+    });
+</script>
+
 </body>
 </html>

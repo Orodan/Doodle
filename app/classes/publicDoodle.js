@@ -41,7 +41,7 @@ publicDoodle.prototype.addSchedules = function (schedules, callback) {
     var doodle_id = publicDoodle.super_.prototype.getId.call(this);
 
     async.each(schedules, function _saveSchedule (schedule, done) {
-        publicDoodle.super_.addSchedule(doodle_id, schedule, done);
+        publicDoodle.super_.addSchedule(doodle_id, schedule.begin_date, schedule.end_date, done);
     }, function (err) {
         return callback(err);
     });

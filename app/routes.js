@@ -9,32 +9,22 @@ var PublicUser = require('./classes/publicUser');
 var Schedule = require('./classes/schedule');
 var Configuration = require('./classes/configuration');
 var async = require('async');
+var util = require('util');
 
 module.exports = function (app, passport) {
 
-    app.get('/choose-language', function (req, res) {
-
-        // Language set
-        Doodle.lang = req.query.language;
-        Schedule.lang = req.query.language;
-
-        console.log('setting language : ', req.query.language);
-
-        res.cookie('mylanguage', req.query.language, { maxAge: 900000, httpOnly: true });
-        res.redirect('/');
-    });
-
 	// =====================================
-    // HOME PAGE ===========================
+    // INDEX PAGE ==========================
     // =====================================
     app.get('/', function (req, res) {
 
         // Language set
         if (req.cookies.mylanguage) {
-            console.log('setting language on home page loading : ', req.cookies.mylanguage);
-
             Doodle.lang = req.cookies.mylanguage;
             Schedule.lang = req.cookies.mylanguage;
+        }
+        else {
+            res.cookie('mylanguage', Doodle.lang, { maxAge: 900000, httpOnly: true });
         }
 
     	res.render('pages/index', {
@@ -46,28 +36,17 @@ module.exports = function (app, passport) {
     // =====================================
     // LOGIN ===============================
     // =====================================
-    // Show login form
-    app.get('/login', function (req, res) {
-    	res.render('pages/login', { message : req.flash('loginMessage')});
-    });
 
-    // Process the login form
     app.post('/login', passport.authenticate('local-login', {
     	successRedirect : '/home',	    // redirect to the secure home section
-    	failureRedirect : '/login',		// redirect back to the login page if there is an error
+    	failureRedirect : '/',		    // redirect back to the index page if there is an error
     	failureFlash : true,			// allow flash messages on fail
         successFlash : true             // allow flash messages on success
     }));
 
-
-
     // =====================================
     // SIGNUP ==============================
     // =====================================
-    // Show the signup form
-    app.get('/signup', function (req, res) {
-    	res.render('pages/signup', { message : req.flash('signupMessage')});
-    });
 
     // Process the signup form
     app.post('/signup', passport.authenticate('local-signup', {
@@ -76,45 +55,36 @@ module.exports = function (app, passport) {
     	failureFlash : true				// allow flash messages
     }));
 
+    // =====================================
+    // LANGUAGE ============================
+    // =====================================
 
+    // AJAX call to set the language
+    app.put('/choose-language', function (req, res) {
+
+        // Language set
+        Doodle.lang = req.body.language;
+        Schedule.lang = req.body.language;
+
+        res.cookie('mylanguage', req.body.language, { maxAge: 900000, httpOnly: true });
+        res.status(200).end();
+    });
 
     // =====================================
     // HOME SECTION ========================
     // =====================================
+
     // You have to be logged in to visit
     // We use route middleware to verify the user
     app.get('/home', isLoggedIn, function (req, res) {
 
+        var user_id = req.user.id;
+
         async.parallel ({
-            doodles: function _getDoodlesFromUser (done) {
-                Doodle.getDoodlesFromUser(req.user.id, function (err, doodles) {
-                    if (err) {
-                        return done(err);
-                    }
-
-                    return done(null, doodles);
-                });
-            }, 
-            participation_requests: function _getParticipationRequests (done) {
-                User.getParticipationRequests(req.user.id, function (err, result) {
-                    if (err) {
-                        return done(err);
-                    }
-
-                    return done(null, result);
-                });
-            },
-            notifications : function _getNotifications (done) {
-                User.getNotifications(req.user.id, function (err, result) {
-                    if (err) {
-                        return done(err);
-                    }
-
-                    return done(null, result);
-                });
-            }
-        }, function (err, results) {
-
+            doodles:                    async.apply(Doodle.getDoodlesFromUser, user_id),
+            participation_requests:     async.apply(User.getParticipationRequests, user_id),
+            notifications:              async.apply(User.getNotifications, user_id)
+        }, function(err, results) {
             if (err) {
                 req.flash('message', 'An error occured : ' + err);
             }
@@ -125,19 +95,29 @@ module.exports = function (app, passport) {
                 doodles : results.doodles,
                 participation_requests: results.participation_requests,
                 notifications: results.notifications
-            });            
+            }); 
         });
     });
 
-    // =====================================
-    // PROFILE SECTION =====================
-    // =====================================
-    app.get('/profile', function (req, res) {
-        res.render('pages/profile', {
-            user : req.user,
-        })
-    });
+    // AJAX call to update the notifications ( when the user read them )
+    app.put('/update-notifications', isLoggedIn, function (req, res) {
 
+        var user_id = req.user.id;
+        var notification_ids = req.body.notifications;
+
+        async.each(notification_ids, 
+            function (notification_id, callback) {
+                Notification.update(notification_id, user_id, callback);
+            },
+            function (err) {
+                if (err) {
+                    return res.status(500).end(err);
+                }
+
+                return res.status(200).end();
+            }
+        );
+    });
 
     // =====================================
     // LOGOUT ==============================
@@ -185,6 +165,23 @@ module.exports = function (app, passport) {
                 doodles: doodles
             });
         });
+    });
+    
+    // AJAX call to update the configuration of the user on the specified doodle
+    app.put('/update-user-configuration', isLoggedIn, function (req, res) {
+
+        var value = req.body.configuration.value;
+        var doodle_id = req.body.configuration.doodle_id;
+        var notification_type = req.body.configuration.notification_type;
+
+        Configuration.update(req.user.id, doodle_id, notification_type, value, function (err, result) {
+            if (err) {
+                return res.status(500).end(String(err));
+            }
+
+            return res.status(200).end();
+        });
+
     });
 
     app.post('/configuration', isLoggedIn, function (req, res) {
@@ -248,69 +245,126 @@ module.exports = function (app, passport) {
         res.render('pages/new-doodle');
     });
 
-    // Process the doodle form
+    // AJAX call to create a new doodle
     app.post('/new-doodle', isLoggedIn, function (req, res) {
 
-        var doodle = new privateDoodle(req.body.name, req.body.description);
-        doodle.save(req.user.id, function (err, result) {
+        var user_id = req.user.id;
+        var doodle_name = req.body.doodle.doodle_name;
+        var doodle_description = req.body.doodle.doodle_description;
+
+        var doodle = new privateDoodle(doodle_name, doodle_description);
+        doodle.save(user_id, function (err, result) {
             if (err) {
-                req.flash('message', 'An error occured : ' + err);
-            }
-            else {
-                req.flash('message', 'Doodle created !');
+                return res.status(500).end(err.toString());
             }
 
-            res.redirect('/home');
+            return res.status(200).end();
         });
     });
-
-
-
+    
     // =====================================
     // SHOW DOODLE =========================
     // =====================================
     app.get('/doodle/:id', function (req, res) {
 
-        Doodle.getAllInformations(req.params.id, function (err, doodle) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-            }
+        var doodle_id = req.params.id;
 
-            // 2 ways :
-            // First : the user is not logged in
-            if ( !req.user ) {
+        async.waterfall([
+            function _getDoodleInfos (callback) {
+                Doodle.getAllInformations(doodle_id, callback);
+            },
+            function _checkUser (doodle, callback) {
 
-                req.flash('message', 'You are accessing this doodle without being logged in');
+                var formated_schedules = {};
 
-                return res.render('pages/doodle', {
-                    doodle : doodle,
-                    user_statut : 'unregistred',
-                    message : req.flash('message')
-                });
+                // Check month and year
+                for (var key in doodle.schedules) {
+                    var schedule = doodle.schedules[key];
 
-            }
+                    // Schedules already on this month ?
+                    if (!formated_schedules[schedule.begin_date.format('MMM YYYY')]) {
+                        formated_schedules[schedule.begin_date.format('MMM YYYY')] = {};
+                    }
 
-            // Second : the user is logged in
-            var user_id = req.user.id; 
+                    var day = schedule.begin_date.format('ddd D');
+                    
+                    // Schedules already on this day ?
+                    var schedulesAlreadyOnThisDay = false;
+                    var _month = formated_schedules[schedule.begin_date.format('MMM YYYY')];
 
-            // We check the persmision of the user ( admin or just user ), if he does not
-            // have access to it, an error appear
-            Doodle.getUserAccess(req.params.id, user_id, function (err, user_statut) {
-                if (err) {
-                    req.flash('message', 'An error occured : ' + err);
-                    return res.redirect('/home');
+                    for (var _day in _month) {
+                        if (_day == day) {
+                            schedulesAlreadyOnThisDay = true;    
+                        }
+                    }
+
+                    if(!schedulesAlreadyOnThisDay) {
+                        formated_schedules[schedule.begin_date.format('MMM YYYY')][day] = [];
+                    }
+
+                    formated_schedules[schedule.begin_date.format('MMM YYYY')][day].push({
+                        id : schedule.id,
+                        begin_time : schedule.begin_date.format('LT'),
+                        end_time: schedule.end_date.format('LT')
+                    });
                 }
 
-                res.render('pages/doodle', {
-                    doodle : doodle,
-                    user_statut : user_statut,
-                    message : req.flash('message')
-                });
+                doodle.schedules = formated_schedules;
+
+                var data = {};
+                data.doodle = doodle;
+                data.lang = Doodle.lang;
+                data.message = req.flash('message');
+
+                // The user is logged in
+                if(req.user) {                    
+                    var user_id = req.user.id; 
+                    Doodle.getUserAccess(doodle_id, user_id, function (err, user_statut) {
+                        if (err) {
+                            return callback(err);
+                        }
+
+                        data.user = {
+                            id: user_id,
+                            statut: user_statut
+                        };
+
+                        return callback(null, data);
+
+                    });
+                }
+                // The user is not logged in
+                else {
+                    data.user = {
+                        statut: 'unregistred'
+                    };
+
+                    return callback(null, data);
+                }
+
+                
+            }
+        ], function (err, data) {
+
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+                return res.redirect('/pages/home');
+            }
+
+            if (!req.user) {
+                req.flash('message', 'You are accessing this doodle without being logged in');
+            }
+
+            console.log("DOODLE : ", data.doodle);
+
+            return res.render('pages/doodle', {
+                doodle: data.doodle,
+                user: data.user,
+                lang: data.lang,
+                message: data.message
             });
         });
     });
-
-
 
     // =====================================
     // DELETE DOODLE =======================
@@ -322,16 +376,16 @@ module.exports = function (app, passport) {
                 Doodle.delete(req.params.id, done);
             },
             function _deleteNotifications (done) {
-                ;
+                
                 async.waterfall([
                     // Get notification ids and user ids of the doodle
                     function _getNotifIdsAndUserIds (finish) {
                         async.parallel({
                             notification_ids: function (end) {
-                                Doodle.getNotifIds(req.params.id, end)
+                                Doodle.getNotifIds(req.params.id, end);
                             },
                             user_ids: function (end) {
-                                Doodle.getUsersIds(req.params.id, end)
+                                Doodle.getUsersIds(req.params.id, end);
                             }
                         }, function (err, results) {
                             return finish(err, results);
@@ -373,87 +427,43 @@ module.exports = function (app, passport) {
     // =====================================
     // ADD PUBLIC USER IN PRIVATE DOODLE ===
     // =====================================
-    app.get('/doodle/:id/add-public-user', function (req, res) {
-        res.render('pages/add-public-user');
-    });
 
+    // AJAX call to add a new public user to the specified doodle
     app.post('/doodle/:id/add-public-user', function (req, res) {
 
         var doodle_id = req.params.id;
-        var user = new PublicUser(req.body.first_name, req.body.last_name);
+        var first_name = req.body.data.user.first_name;
+        var last_name = req.body.data.user.last_name;
+        var votes = req.body.data.votes;
 
-        user.save(doodle_id, function (err, result) {
+        var public_user = new PublicUser(first_name, last_name);
+        public_user.save(doodle_id, votes, function (err) {
             if (err) {
-                req.flash('message', 'An error occured : ' + err);
-                return res.redirect('/doodle/' + req.params.id);
+                console.log("ERROR : ", err);
+                return res.status(500).end(String(err));
             }
-            else {
-                req.session.user_id = user.id;
-                return  res.redirect('/doodle/' + req.params.id + '/add-public-vote');
-            }
-        });
-    });
-
-    // =====================================
-    // ADD PUBLIC VOTE IN PRIVATE DOODLE ===
-    // =====================================
-    app.get('/doodle/:id/add-public-vote', function (req, res) {
-        
-        Doodle.getSchedules(req.params.id, function (err, schedules) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-                res.redirect('/doodle/' + req.params.id);
-            }
-            else {
-                res.render('pages/add-public-vote', {
-                    schedules : schedules
-                });
-            }
-        });
-    });
-
-    // Process add public vote form
-    app.post('/doodle/:id/add-public-vote', function (req, res) {
-
-        var id = req.params.id;
-        var user_id = req.session.user_id;
-
-        Doodle.saveVotes(id, user_id, req.body.schedules, function (err, result) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-            }
-            else {
-                req.flash('message', 'User added !');
-            }
-
-            req.session.user_id = null;
-            res.redirect('/doodle/' + id);
+            
+            return res.status(200).end();
         });
     });
 
     // =====================================
     // ADD USER ============================
     // =====================================
-    app.get('/doodle/:id/add-user', isLoggedIn, function (req, res) {
-        res.render('pages/add-user');
-    });
 
-    // Create a new participation request
-    app.post('/doodle/:id/add-participation-request', isLoggedIn, function (req, res) {
+    // AJAX call to create a participation request for an user
+    app.post('/doodle/:id/create-participation-request', isLoggedIn, function (req, res) {
 
-        var id = req.params.id;
+        var doodle_id = req.params.id;
         var email = req.body.email;
 
-        Doodle.addParticipationRequest(id, email, function (err, result) {
+        Doodle.addParticipationRequest(doodle_id, email, function (err) {
             if (err) {
-                req.flash('message', 'An error occured : ' + err);
+                return res.status(500).json({ error: err });
             }
-            else {
-                req.flash('message', 'Participation request send ! ');
-            }
-
-            res.redirect('/doodle/' + id);
         });
+
+        return res.status(200).end();
     });
 
     // Add to the doodle the user invited to participate
@@ -495,195 +505,109 @@ module.exports = function (app, passport) {
     // =====================================
     // REMOVE USER =========================
     // =====================================
-    // Show doodle remove-user form
-    app.get('/doodle/:id/remove-user', isLoggedIn, function (req, res) {
 
-        var id = req.params.id;
-
-        Doodle.getUsers(id, function (err, users) {
-            if (err) {
-                req.flash('message', 'An error occured ' + err);
-                res.redirect('/doodle' + id);
-            }
-            else {
-
-                res.render('pages/remove-user', {
-                    users : users
-                });
-            }
-        });
-    });
-
-    // Process doodle remove-user form
-    app.post('/doodle/:id/remove-user', isLoggedIn, function (req, res) {
+    // AJAX call to remove the specified user from the doodle
+    app.delete('/doodle/:id/remove-user', isLoggedIn, function (req, res) {
 
         var doodle_id = req.params.id;
-        var user_id = req.body.user;
+        var user_id = req.body.user_id;
 
-        async.series([
-            function _removeUserFromDoodle(done) {
-                Doodle.removeUserFromDoodle(doodle_id, user_id, done);
-            },
-            function _checkUserAccess(done) {
-                Doodle.checkUserAccess(doodle_id, req.user.id, function (err, result) {
-                    if (err) {
-                        return done(err);
-                    }
-
-                    req.flash('message', 'User removed');
-                    (result) ? res.redirect('/doodle/' + doodle_id) : res.redirect('/home');
-                });
+        Doodle.removeUserFromDoodle(doodle_id, user_id, function (err) {
+            if (err) {
+                return res.status(500).json({ error: err });
             }
-        ], function (err) {
-            req.flash('message', 'An error occured : ' + err);
-            res.redirect('/home');
         });
+
+        return res.status(200).end();
     });
-
-
 
     // =====================================
     // ADD SCHEDULE ========================
     // =====================================
-    // Show doodle add-schedule form
-    app.get('/doodle/:id/add-schedule', isLoggedIn, function (req, res) {
-        res.render('pages/add-schedule', {
-            lang: Doodle.lang
-        });
-    });
 
-    // Process doodle add-schedule form
+    // AJAX call to add a schedule to a doodle
     app.post('/doodle/:id/add-schedule', isLoggedIn, function (req, res) {
 
-        var id = req.params.id;
+        var doodle_id = req.params.id;
+        var begin_date = req.body.schedule.begin_date;
+        var end_date = req.body.schedule.end_date;
 
-        Doodle.addSchedule(req.params.id, req.body, function (err, result) {
+        Doodle.addSchedule(req.params.id, begin_date, end_date, function (err) {
             if (err) {
-                req.flash('message', 'An error occured : ' + err);
-            }
-            else {
-                req.flash('message', 'Schedule added !');
+                return res.status(500).json({ error: err });
             }
 
-            res.redirect('/doodle/' +id);
+            return res.status(200).end();
         });
-
     });
 
     // =====================================
     // DELETE SCHEDULE =====================
     // =====================================
-    // Show doodle delete-schedule form
-    app.get('/doodle/:id/delete-schedule', isLoggedIn, function (req, res) {
 
-        var id = req.params.id;
+    // AJAX call to delete the specified schedule
+    app.delete('/doodle/:id/delete-schedule', isLoggedIn, function (req, res) {
 
-        Doodle.getSchedules(id, function (err, schedules) {
+        var doodle_id = req.params.id;
+        var schedule_id = req.body.schedule_id;
+
+        Doodle.deleteSchedule(doodle_id, schedule_id, function (err) {
             if (err) {
-                req.flash('message', 'An error occured : ' + err);
-                res.redirect('/doodle/' + id);
-            }
-            else {
-                res.render('pages/delete-schedule', {
-                    schedules : schedules
-                });
+                return res.status(500).json({ error: err });
             }
         });
+
+        return res.status(200).end();
     });
-
-    // Process doodle delete-schedule form
-    app.post('/doodle/:id/delete-schedule', isLoggedIn, function (req, res) {
-
-        var id = req.params.id;
-        var schedule_id = req.body.schedule;
-
-        Doodle.deleteSchedule(id, schedule_id, function (err, result) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-            }
-            else {
-                req.flash('message', 'Schedule removed !');
-            }
-
-            res.redirect('/doodle/' + id);
-        });
-    });
-
-
 
     // =====================================
-    // ADD VOTE ============================
+    // UPDATE VOTE =========================
     // =====================================
-    // Show doodle add-vote form
-    app.get('/doodle/:id/add-vote', isLoggedIn, function (req, res) {
 
-        var id = req.params.id;
-
-        Doodle.getSchedules(req.params.id, function (err, schedules) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-
-                res.redirect('/doodle/' + id);
-            }
-            else {
-                res.render('pages/add-vote', {
-                    schedules : schedules
-                });
-            }
-        });
-    });
-
-    // Process doodle add-vote form
-    app.post('/doodle/:id/add-vote', isLoggedIn, function (req, res) {
+    // AJAX call to update votes
+    app.put('/doodle/:id/update-votes', isLoggedIn, function (req, res) {
 
         var doodle_id = req.params.id;
         var user_id = req.user.id;
-        var schedule_id = req.body.schedule;
-        var vote_value = req.body.vote;
-
-        var vote = new Vote(doodle_id, user_id, schedule_id, vote_value);
-        var notification = new Notification(user_id, doodle_id, schedule_id);
 
         async.parallel([
-            // Save the vote in db
-            function _saveVote(done) {
-                vote.save(function (err) {
-                    return done(err);
-                });        
+            function _updateVotes (end) {
+                Vote.updateVotes(doodle_id, user_id, req.body.votes, end);        
             },
-            // Save the notification about this vote
-            function _saveNotification (done) {
-                notification.save(function (err) {
-                    return done(err);
+            function _createNotifications (end) {
+                var notif = new Notification (user_id, doodle_id);
+
+                async.parallel([
+                    function _saveNotif (done) {
+                        notif.save(done);
+                    },
+                    function _saveNotificationForUsers (done) {
+                        notif.saveNotificationForUsers(done);
+                    },
+                    function _saveNotificationsForDoodle (done) {
+                        notif.saveNotificationsForDoodle(done);
+                    }
+                ], function (err) {
+                    return end(err);
                 });
+
             }
         ], function (err) {
             if (err) {
-                req.flash('message', 'An error occured : ' + err);
+                return res.status(500).json({ error: err });
             }
-            else {
-                req.flash('message', 'Vote taken !');
-            }
-            res.redirect('/doodle/' + doodle_id);
+
+            return res.status(200).end();
         });
     });
 
-
-
     // ==========================================================================
-    // PUBLIC DOODLE SECTION ===================================================
+    // PUBLIC DOODLE SECTION ====================================================
     // ==========================================================================
-
 
     // =====================================
     // NEW PUBLIC DOODLE ===================
     // =====================================
-    // Show the doodle form
-    app.get('/new-public-doodle', function (req, res) {
-        res.render('pages/new-public-doodle', {
-            message : req.flash.message
-        });
-    });
 
     // Process the doodle form
     app.post('/new-public-doodle', function (req, res) {
@@ -711,8 +635,141 @@ module.exports = function (app, passport) {
     });
 
     // =====================================
+    // SHOW PUBLIC DOODLE ==================
+    // =====================================
+
+    // Show generated links for the public doodle
+    app.get('/index-public-doodle/:admin_link_id', function (req, res) {
+
+        publicDoodle.getDoodleIdFromAdminLinkId(req.params.admin_link_id, function (err, doodle_id) {
+
+            if (err) {
+                req.flash('message', 'An error occured : ' + err);
+                res.redirect('/');
+            }
+
+            res.render('pages/index-public-doodle', {
+                doodle_administration_link : req.headers.host + '/public-doodle/' + req.params.admin_link_id,
+                doodle_user_link : req.headers.host + '/public-doodle/' + doodle_id
+            });
+        });
+    });
+
+    // Show the public doodle 
+    app.get('/public-doodle/:id', function (req, res) {
+
+        async.waterfall([
+            function _checkLinkId (done) {
+                publicDoodle.checkLinkId(req.params.id, done);
+            },
+            function _handleResult (statut, done) {
+
+                var doodle_id = null;
+
+                async.series([
+                    function _getDoodleId (end) {
+                        switch (statut) {
+                            case 'administrator': 
+                                var admin_link_id = req.params.id;
+                                publicDoodle.getDoodleIdFromAdminLinkId(admin_link_id, function (err, _doodle_id) {
+                                    doodle_id = _doodle_id;
+                                    statut = 'admin';
+                                    return end();
+                                });
+                                break;
+                            case 'user': 
+                                doodle_id = req.params.id;
+                                return end();
+                            default: 
+                                return end();
+                        }
+                    },
+                    function _getDoodleData (end) {
+
+                        async.waterfall([
+                            function _getDoodleInfos (callback) {
+                                Doodle.getAllInformations(doodle_id, callback);
+                            },
+                            function _checkUser (doodle, callback) {
+
+                                var formated_schedules = {};
+
+                                // Check month and year
+                                for (var key in doodle.schedules) {
+                                    var schedule = doodle.schedules[key];
+
+                                    // Schedules already on this month ?
+                                    if (!formated_schedules[schedule.begin_date.format('MMM YYYY')]) {
+                                        formated_schedules[schedule.begin_date.format('MMM YYYY')] = {};
+                                    }
+
+                                    var day = schedule.begin_date.format('ddd. D');
+                                    
+                                    // Schedules already on this day ?
+                                    var schedulesAlreadyOnThisDay = false;
+                                    var _month = formated_schedules[schedule.begin_date.format('MMM YYYY')];
+
+                                    for (var _day in _month) {
+                                        if (_day == day) {
+                                            schedulesAlreadyOnThisDay = true;    
+                                        }
+                                    }
+
+                                    if(!schedulesAlreadyOnThisDay) {
+                                        formated_schedules[schedule.begin_date.format('MMM YYYY')][day] = [];
+                                    }
+
+                                    formated_schedules[schedule.begin_date.format('MMM YYYY')][day].push({
+                                        id : schedule.id,
+                                        begin_time : schedule.begin_date.format('LT'),
+                                        end_time: schedule.end_date.format('LT')
+                                    });
+                                }
+
+                                doodle.schedules = formated_schedules;
+
+                                var data = {};
+                                data.doodle = doodle;
+                                data.lang = Doodle.lang;
+                                data.message = req.flash('message');    
+                                data.user = {
+                                    statut: statut
+                                };
+
+                                req.session.statut = statut;
+                                console.log("REQ SESSION : ", req.session.statut);
+
+                                return callback(null, data);
+                                
+                            }
+                        ], function (err, data) {
+
+                            if (err) {
+                                req.flash('message', 'An error occured : ' + err);
+                                return res.redirect('/');
+                            }
+
+                            if (!req.user) {
+                                req.flash('message', 'You are accessing this doodle without being logged in');
+                            }
+
+                            return res.render('pages/public-doodle', {
+                                doodle: data.doodle,
+                                user: data.user,
+                                lang: data.lang,
+                                message: data.message
+                            });
+                        });
+                    }
+                ]);
+            }
+        ]);
+    });
+
+    // =====================================
     // DELETE PUBLIC DOODLE ================
     // =====================================
+
     // Delete a public doodle
     app.get('/public-doodle/:id/remove-public-doodle', function (req, res) {
 
@@ -732,187 +789,150 @@ module.exports = function (app, passport) {
     });
 
     // =====================================
-    // SHOW PUBLIC DOODLE ==================
-    // =====================================
-    // Show generated links for the public doodle
-    app.get('/index-public-doodle/:admin_link_id', function (req, res) {
-
-        publicDoodle.getDoodleIdFromAdminLinkId(req.params.admin_link_id, function (err, doodle_id) {
-
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-                res.redirect('/');
-            }
-
-            res.render('pages/index-public-doodle', {
-                doodle_administration_link : req.headers.host + '/public-doodle/' + req.params.admin_link_id,
-                doodle_user_link : req.headers.host + '/public-doodle/' + doodle_id
-            });
-        });
-
-    });
-
-    // Show the public doodle 
-    app.get('/public-doodle/:id', function (req, res) {
-
-        async.waterfall([
-            function _checkLinkId (done) {
-                publicDoodle.checkLinkId(req.params.id, done);
-            },
-            function _handleResult (statut, done) {
-
-                switch (statut) {
-                    case 'administrator':
-                        // We get the informations about the doodle from the administration_link_id
-                        publicDoodle.getAllInformationsFromAdminLinkId(req.params.id, function (err, doodle) {
-                            if (err) {
-                                req.flash('message', 'An error occured : ' + err);
-                            }
-
-                            req.session.admin_link_id = req.params.id;
-
-                            res.render('pages/public-doodle', {
-                                doodle : doodle,
-                                statut : statut,
-                                message : req.flash('message')
-                            });
-                        });
-
-                        break;
-                    case 'user':
-                        // We get informations about the doodle from its id
-                        publicDoodle.getAllInformations(req.params.id, function (err, doodle) {
-                            if (err) {
-                                req.flash('message', 'An error occured : ' + err);
-                            }
-
-                            res.render('pages/public-doodle', {
-                                doodle : doodle,
-                                statut : statut,
-                                message : req.flash('message')
-                            });
-                        });
-
-                        break;
-                    default:
-                        req.flash('message', 'The page you tried to access does not exists');
-                        res.redirect('/');
-
-                        break;
-                }
-            }
-        ]);
-    });
-
-
-
-    // =====================================
     // ADD PUBLIC USER =====================
     // =====================================
-    // Show add public user form
-    app.get('/public-doodle/:id/add-public-user', function (req, res) {
-        res.render('pages/add-public-user');
-    });
 
-    // Process add public user form
+    // AJAX call to add a new public user to the specified public doodle
     app.post('/public-doodle/:id/add-public-user', function (req, res) {
 
-        var doodle_id = req.params.id;
-        var user = new PublicUser(req.body.first_name, req.body.last_name);
+        if (req.session.statut == 'admin'){
 
-        user.save(doodle_id, function (err, result) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-                return res.redirect('/public-doodle/' + req.params.id);
-            }
-            else {
-                req.session.user_id = user.id;
-                return  res.redirect('/public-doodle/' + req.params.id + '/add-public-vote');
-            }
-        });
+            var doodle_id = null;
+            async.series ([
+                function _getDoodleId (end) {
+                    publicDoodle.getDoodleIdFromAdminLinkId(req.params.id, function (err, _doodle_id) {
+                        doodle_id = _doodle_id;
+                        return end();
+                    });        
+                },
+                function _process (end) {
+                    
+                    var first_name = req.body.data.user.first_name;
+                    var last_name = req.body.data.user.last_name;
+                    var votes = req.body.data.votes;
+
+                    var public_user = new PublicUser(first_name, last_name);
+                    public_user.save(doodle_id, votes, function (err) {
+                        if (err) {
+                            console.log("ERROR : ", err);
+                            return res.status(500).end(String(err));
+                        }
+                        
+                        return res.status(200).end();
+                    });                    
+                }
+            ]);
+        }
+        else {
+            var doodle_id = req.params.id; 
+
+            var first_name = req.body.data.user.first_name;
+            var last_name = req.body.data.user.last_name;
+            var votes = req.body.data.votes;
+
+            var public_user = new PublicUser(first_name, last_name);
+            public_user.save(doodle_id, votes, function (err) {
+                if (err) {
+                    console.log("ERROR : ", err);
+                    return res.status(500).end(String(err));
+                }
+                
+                return res.status(200).end();
+            });   
+        }
     });
 
     // =====================================
     // REMOVE PUBLIC USER ==================
     // =====================================
-    // Show remove public user form
-    app.get('/public-doodle/:doodle_id/remove-public-user', function (req, res) {
 
-        Doodle.getUsers(req.params.doodle_id, function (err, users) {
-            if (err) {
-                req.flash('An error occured : ' + err);
-                res.redirect('/public-doodle/' + req.params.admin_link_id);
-            }
-            else {
+    // AJAX call to remove a user from a public doodle
+    app.delete('/public-doodle/:id/remove-user', function (req, res) {
 
-                res.render('pages/remove-public-user', {
-                    users : users
-                });                
+        var doodle_id = null;
+        var user_id = req.body.user_id;
+
+        async.series ([
+            function _getDoodleId (end) {
+                publicDoodle.getDoodleIdFromAdminLinkId(req.params.id, function (err, _doodle_id) {
+                    doodle_id = _doodle_id;
+                    return end();
+                });        
+            },
+            function _process (end) {
+                
+                Doodle.removeUserFromDoodle(doodle_id, user_id, function (err) {
+                    if (err) {
+                        return res.status(500).json({ error: err });
+                    }
+                });
+
+                return res.status(200).end();                
             }
-        });
+        ]);
     });
-
-    // Process remove public user form
-    app.post('/public-doodle/:doodle_id/remove-public-user', function (req, res) {
-
-        var id = req.params.doodle_id;
-        var user_id = req.body.user;
-        var admin_link_id = req.session.admin_link_id;
-
-        req.session.admin_link_id = null;
-
-        Doodle.removeUserFromPublicDoodle(id, user_id, function (err, result) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-            }
-            else {
-                req.flash('message', 'User deleted !');
-            }
-
-            res.redirect('/public-doodle/' + admin_link_id );
-        });
-
-    });
-
 
     // =====================================
     // ADD PUBLIC VOTE =====================
     // =====================================
-    // Show add public vote form
-    app.get('/public-doodle/:id/add-public-vote', function (req, res) {
 
-        Doodle.getSchedules(req.params.id, function (err, schedules) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-                res.redirect('/public-doodle/' + req.params.id);
+    // AJAX call to add a schedule to a public doodle
+    app.post('/public-doodle/:id/add-schedule', function (req, res) {
+
+        var doodle_id = null;
+
+        async.series ([
+            function _getDoodleId (end) {
+                publicDoodle.getDoodleIdFromAdminLinkId(req.params.id, function (err, _doodle_id) {
+                    doodle_id = _doodle_id;
+                    return end();
+                });        
+            },
+            function _process (end) {
+                
+                var begin_date = req.body.schedule.begin_date;
+                var end_date = req.body.schedule.end_date;
+
+                Doodle.addSchedule(doodle_id, begin_date, end_date, function (err) {
+                    if (err) {
+                        return res.status(500).json({ error: err });
+                    }
+
+                    return res.status(200).end();
+                });                   
             }
-            else {
-                res.render('pages/add-public-vote', {
-                    schedules : schedules
+        ]);
+    });
+
+    // =====================================
+    // REMOVE PUBLIC SCHEDULE ==============
+    // =====================================
+
+    // AJAX call to remove a schedule from a public doodle
+    app.delete('/public-doodle/:id/delete-schedule', function (req, res) {
+
+        var doodle_id = null;
+        var schedule_id = req.body.schedule_id;
+
+        async.series ([
+            function _getDoodleId (end) {
+                publicDoodle.getDoodleIdFromAdminLinkId(req.params.id, function (err, _doodle_id) {
+                    doodle_id = _doodle_id;
+                    return end();
+                });        
+            },
+            function _process (end) {
+                
+                Doodle.deleteSchedule(doodle_id, schedule_id, function (err) {
+                    if (err) {
+                        return res.status(500).json({ error: err });
+                    }
                 });
+
+                return res.status(200).end();    
             }
-        });
+        ]);
     });
-
-    // Process add public vote form
-    app.post('/public-doodle/:id/add-public-vote', function (req, res) {
-
-        var id = req.params.id;
-        var user_id = req.session.user_id;
-
-        Doodle.saveVotes(id, user_id, req.body.schedules, function (err, result) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-            }
-            else {
-                req.flash('message', 'User created !');
-            }
-
-            req.session.user_id = null;
-            res.redirect('/public-doodle/' + id);
-        });
-    });
-
 
     // =====================================
     // MIDDLEWARE ==========================

@@ -4,121 +4,298 @@
 <head>
     <% include ../partials/head %>
 </head>
-<body class="container">
+<body>
 
 <!-- Header -->
 <% include ../partials/header %>
 
-<!-- Content -->
-<main>
-    <div class="row">
-        <!-- NOTIFICATION MESSAGE -->
-        <% if (notifications && notifications.length > 0) { %>
-            <div id="notifications-box">
-                <div class="col-md-6" id="notifications">
-                    <% var notifications_not_read = 0; %> 
-                    <% for ( var key in notifications ) { %>
-                        <% if ( notifications[key].is_read === false ) { %>
-                            <% notifications_not_read++; %>
+
+<div class="container-fluid">
+    <div class="starter-template" style="padding-top: 60px;">
+        <main class="col-md-12" style="margin-bottom: 60px;">
+
+            <section class="col-md-7">
+                <div class="section-title">
+                    <h2><i class="fa fa-calendar"></i> <%= __('My doodles') %></h2>
+
+                    <button class="icon-notification" id="toggleNotifications" type="button"><%= __('Notifications'); %> 
+
+                    <% if (typeof notifications != 'undefined' && notifications.length !== 0) { %>
+                        <% var nbNotificationUnread = 0; %>
+                        <% for (var key in notifications) { %>
+                                <% if(notifications[key].is_read == false) { %>
+                                    <% nbNotificationUnread++; %>
+                                <% } %>
+                        <% } %>
+
+                        <% if (nbNotificationUnread > 0) { %>
+                            <span class="badge"><%= nbNotificationUnread %></span>
                         <% } %>
                     <% } %>
-
-                    <!-- Different icon according if there is a notification to read or not -->
-                    <% if (notifications_not_read > 0) { %>
-                        <a href="#" id="notifications-button"><span class="fa fa-envelope fa-2x"></span><span class="badge"><%= notifications_not_read %></span></a><br/>
-                    <% } else { %>
-                        <a href="#" id="notifications-button"><span class="fa fa-envelope-o fa-2x"></span></a><br/>
-                    <% } %>
-
-                    <!-- notifications -->
-                    <div class="well hidden notifications-content" id="notifications-content">
-                    <% for (var key in notifications ) { %>
-                        <div class="notification" data="<%= notifications[key].notification_id %>">
-                            <% if (notifications[key].is_read === false) { %>
-                                <span class="badge">New</span><br/>
-                            <% } %>
-
-                            <%= notifications[key].user.first_name + ' ' + notifications[key].user.last_name %>
-                            <%= __('has modify his/her vote about the following schedule : '); %>
-                            <%= notifications[key].schedule.begin_date + ' to ' + notifications[key].schedule.end_date %>
-                            <%= __('on the doodle '); %>
-                            <%= notifications[key].doodle.name; %>
-                        </div>
-                        <hr/> 
-                    <% } %>
+                    </button>
+                    <div class="notifications-content hidden">
+                        <% for (var key in notifications) { %>
+                            <% var notification = notifications[key]; %>
+                            <article class="article-doodle">
+                                <section class="article-header">
+                                    <%= notification.created %>
+                                </section>
+                                <section class="article-content notification-data" id="<%= notification.notification_id %>">
+                                    <strong><%= notification.user.first_name %> <%= notification.user.last_name %></strong> <%= __('updated his votes on ') %> <strong><%= notification.doodle.name %></strong>
+                                </section>
+                            </article>
+                        <% } %>
                     </div>
                 </div>
-            </div>
-        <% } %>
-    </div>
 
-    <div class="row">
-        <!-- ALERT MESSAGE -->
-        <% if (message && message.length > 0) { %>
-            <div class="col-md-6 col-md-offset-3 alert alert-info" role="alert">
-                <%= __('' + message + '') %>
-            </div>
-        <% } %>
+                <% if (typeof doodles == 'undefined' || doodles.length === 0) { %>
+                    <div class="infos">
+                        <p><%= __('You currently have no doodle') %></p>
+                    </div>
+                <% } else { %>
+                    <% for (var key in doodles) { %>
 
-        <!-- DOODLES INFORMATIONS -->
-        <div class="col-md-8">
-            <div class="well">
-                <h3><span class="fa fa-archive"></span> <%= __('My doodles') %></h3>
-                <hr>
-                <% if (doodles) { %>
-                    <ul>
-                        <% for(var key in doodles) { %>
-                            <li>
-                                <strong><%= doodles[key].name %></strong><br>
-                                <%= doodles[key].description %><br>
-                                <a href='/doodle/<%= doodles[key].id %>'><%= __('Access doodle') %></a><br>
+                        <article class="article-doodle">
+
+                            <section class="article-header">
+                                <a href='/doodle/<%= doodles[key].id %>'><h4><%= doodles[key].name %></h4></a>
                                 <% if (doodles[key].user_statut == 'admin') { %>
-                                    <a href='/doodle/delete/<%= doodles[key].id %>'><%= __('Remove doodle') %></a>
+                                    <a class="close-icon" href='/doodle/delete/<%= doodles[key].id %>'><i class="fa fa-times"></i></a>
                                 <% } %>
-                            </li>
-                            <br>
-                        <% } %>
-                    </ul>
+                            </section>
+
+                            <section class="article-content">
+                                <p><%= doodles[key].description %></p>
+                                <a href="#" class="button-article-footer"><i class="align-right fa fa-chevron-right"></i></a>
+                            </section>
+
+                            <section id="article-footer" class="article-footer hidden">
+                                <ul class="list-group">
+                                    <% if (doodles[key].user_configuration.notification) { %>
+                                        <li class="list-group-item"><%= __('Notifications') %><input type="checkbox" checked="checked" data="<%= doodles[key].id %>" data-type="notification"></li>
+                                    <% } else { %>
+                                        <li class="list-group-item"><%= __('Notifications') %><input type="checkbox" data="<%= doodles[key].id %>" data-type="notification"></li>
+                                    <% } %>
+                                    
+                                    <% if (doodles[key].user_configuration.notification_by_email) { %>
+                                        <li class="list-group-item"><%= __('Notifications by email') %><input type="checkbox" checked="checked" data="<%= doodles[key].id %>" data-type="notification_by_email"></li>
+                                    <% } else { %>
+                                        <li class="list-group-item"><%= __('Notifications by email') %><input type="checkbox" data="<%= doodles[key].id %>" data-type="notification_by_email"></li>
+                                    <% } %>
+                                </ul>
+                            </section>
+
+                        </article>
+
+                    <% } %>
                 <% } %>
-                <br>
-                <a href="/new-doodle" class="btn btn-primary btn-sm"><%= __('Create doodle') %></a>
-            </div>
-        </div>
 
-        <!-- PARTICIPATION REQUESTS -->
-        <div class="col-md-4">
-            <div class="well">
-                <h3><span class="fa fa-question"></span> <%= __('Participation requests') %></h3>
-                <% if ( participation_requests != null && participation_requests.length > 0 ) { %>
-                    <ul>
-                        <% for (var key in participation_requests ) { %>
-                            <li>
-                                <strong><%= participation_requests[key].name %></strong><br/>
-                                <%= participation_requests[key].description %><br/>
+                <div class="doodle-buttons text-right">
+                    <button data-toggle="modal" data-target="#myModal"><%= __('Create new doodle') %></button>
+                </div>
 
-                                <a href='/doodle/<%= participation_requests[key].id %>/participate'><%= __('Participate') %></a><br/>
+                <!-- Modal create doodle-->                    
+                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="popup-content">
+                        <a class="close-icon btn-close-modal" data-dismiss="modal" href="#"><i class='fa fa-times'></i></a>
+                        <div class="popup-title">
+                            <h3><%= __('New Doodle') %></h3>
+                        </div>
+                        <div class="popup-form">
 
+                            <div class="form-group">
+                                <input id="doodle-name" type="text" name="name" placeholder="<%= __('Name') %>" class="form-control">
+                            </div>
 
-                                <a href='/doodle/<%= participation_requests[key].id %>/decline'><%= __('Decline') %></a>
-                            </li>
+                            <div class="form-group">
+                                <textarea id="doodle-description" type="textarea" name="description" placeholder="<%= __('Description') %>" class="form-control"></textarea>
+                            </div>
+
+                            <div class="text-center">
+                                <button id="btn-new-doodle" class="btn" style="margin-top: 10px;"><%= __('Save Doodle') %></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- End modal -->
+
+                <!-- Modal show notifications -->                    
+                <div class="modal fade show-notifications" id="modal-notifications" tabindex="-1" role="dialog" aria-labelledby="modal-notificationsLabel" aria-hidden="true">
+                    <div class="popup-content">
+                        <a class="close-icon btn-close-modal" data-dismiss="modal" href="#" id="close-modal-notifications"><i class='fa fa-times'></i></a>
+                    
+                        <% for (var key in notifications) { %>
+                            <% var notification = notifications[key]; %>
+                            <article class="article-doodle">
+                                <section class="article-header">
+                                    <%= notification.created %>
+                                </section>
+                                <section class="article-content notification" id="<%= notification.notification_id %>">
+                                    <strong><%= notification.user.first_name %> <%= notification.user.last_name %></strong> <%= __('updated his votes on ') %> <strong><%= notification.doodle.name %></strong>
+                                </section>
+                            </article>
                         <% } %>
-                    </ul>
+
+                    </div>
+                </div>
+                <!-- End modal -->
+
+            </section>
+
+            <section class="col-md-5">
+
+                <div class="section-title">
+                    <h2><i class="fa fa-question"></i> <%= __('Participation requests') %></h2>
+                </div>
+
+                <% if (typeof participation_requests == 'undefined' || participation_requests.length === 0) { %>
+                    <div class="infos">
+                        <p><%= __('You currently have no participation requests') %></p>
+                    </div>
                 <% } else { %>
-                    <p><%= __('You have no request to participate to a doodle') %></p>
-                <% } %>
-            </div>
-        </div>
+                    <% for (var key in participation_requests) { %>
+                        <article class="article-doodle">
 
+                            <section class="article-header">
+                                <a href='/doodle/<%= participation_requests[key].id %>/participate'><h4><%= participation_requests[key].name %></h4></a>
+                                <a class="close-icon" href='/doodle/<%= participation_requests[key].id %>/decline'><i class="fa fa-times"></i></a>
+                            </section>
+
+                            <section class="article-content">
+                                <p>
+                                    <%= participation_requests[key].description %>
+                                </p>
+                            </section>
+                        </article>
+                    
+                    <% } %>
+                <% } %>
+
+            </section>
+        </main>
     </div>
-</main>
+</div>
+
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-<!-- <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script> -->
-<script type="text/javascript" src="/js/script.js"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/js/home.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
 
-<footer class="footer" style="width: inherit;">
+<script type="text/javascript">
+jQuery(function($) {
+
+    $(document).on('click', '.button-article-footer', function (e) {
+        e.preventDefault();
+
+
+        $(this).children().toggleClass('fa-chevron-right');
+        $(this).children().toggleClass('fa-chevron-down');
+
+        $(this).parent().next().toggleClass('hidden');
+    });
+
+    $(document).on('click', 'input:checkbox', function (e) {
+
+        var configuration = {
+            doodle_id: $(this).attr('data'),
+            value: $(this).prop('checked'),
+            notification_type: $(this).attr('data-type')
+        };
+
+        $.ajax({
+            url: '/update-user-configuration',
+            type: 'PUT',
+            data: { configuration : configuration },
+            dataType: 'text',
+            success: function (res, statut) {
+                console.log("user configuration updated");
+            },
+            error: function (res, statut, err) {
+                console.log(res);
+                console.log(statut);
+                console.log(err);
+            },
+            complete: function (res, statut) {
+            }
+        });
+    });
+
+    $(document).on('click', '#btn-new-doodle', function (e) {
+        e.preventDefault();
+
+        $('#myModal').modal('hide');
+
+        console.log($('#doodle-name').val());
+        console.log($('#doodle-description').val());
+
+        var _doodle = {
+            doodle_name: $('#doodle-name').val(),
+            doodle_description: $('#doodle-description').val()
+        };
+
+        $.ajax({
+            url: '/new-doodle',
+            type: 'POST',
+            data: { doodle : _doodle },
+            dataType: 'text',
+            success: function (res, statut) {
+                console.log("doodle created");
+            },
+            error: function (res, statut, err) {
+                console.log(res);
+                console.log(statut);
+                console.log(err);
+            },
+            complete: function (res, statut) {
+                window.location.reload();
+            }
+        });
+
+    });
+
+    $(document).on('click', '#toggleNotifications', function (e) {
+
+        if(!$('.notifications-content').hasClass('hidden')) {
+            
+            var notification_data = $(".notification-data");
+            var notification_ids = [];
+
+            for (var i = 0; i < notification_data.length; i++) {
+                notification_ids.push(notification_data[i].id);
+            }
+
+            $.ajax({
+                url: '/update-notifications',
+                type: 'PUT',
+                data: { notifications : notification_ids },
+                dataType: 'text',
+                success: function (res, statut) {
+                    console.log("notifications updated");
+                },
+                error: function (res, statut, err) {
+                    console.log(res);
+                    console.log(statut);
+                    console.log(err);
+                },
+                complete: function (res, statut) {
+                    window.location.reload();
+                }
+            });
+
+        }
+
+        $('.notifications-content').toggleClass('hidden');
+    });
+
+});
+</script>
+
+<footer class="footer" style="width: 100%;">
     <% include ../partials/footer %>
 </footer>
 
 </body>
+
+
 </html>

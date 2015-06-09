@@ -1,16 +1,16 @@
 // Dependencies ------------------------------------------------
 var async = require('async');
 var assert = require('assert');
+var moment = require('moment');
 
 /**
 *	Constructor
 **/
-function notification (user_id, doodle_id, schedule_id) {
+function notification (user_id, doodle_id) {
 
 	this.notification_id = notification.timeuuid();
 	this.user_id = user_id;
 	this.doodle_id = doodle_id;
-	this.schedule_id = schedule_id;
 
 }
 
@@ -27,8 +27,8 @@ notification.prototype.save = function (callback) {
 		// Save the notification and associate it with the doodle
 		function _saveNotification (done) {
 
-			var query = 'INSERT INTO notification (notification_id, user_id, doodle_id, schedule_id) values (?, ?, ?, ?)';
-			notification.db.execute(query, [ this.notification_id, this.user_id, this.doodle_id, this.schedule_id ], { prepare : true }, function (err) {
+			var query = 'INSERT INTO notification (notification_id, user_id, doodle_id) values (?, ?, ?)';
+			notification.db.execute(query, [ this.notification_id, this.user_id, this.doodle_id ], { prepare : true }, function (err) {
 				return done(err);
 			});
 
@@ -146,7 +146,7 @@ notification.get = function (notification_id, callback) {
 /**
  *	Get all the notifications specified
  **/
-notification.getAll = function (notification_ids, callback) {
+notification.getAllInformationsFromIds = function (notification_ids, callback) {
 
 	var notifications = [];
 
@@ -178,15 +178,36 @@ notification.getAll = function (notification_ids, callback) {
 			// it is sorted according to the time each notification was
 			// send, if we don't, we lose this order
 			notification_data.user = result.user;
-			notification_data.schedule = result.schedule;
 			notification_data.doodle = result.doodle;
 
 			return done(err, result);
 		});
 
 	}, function (err) {
+		
 		return callback(err, notification_ids);
 	});
+};
+
+/**
+*	Sort the notifications from the sooner to the older
+**/
+notification.sortNotifications = function (notifications, callback) {
+	notifications.sort(function (notification1, notification2) {
+
+		notification1.created = moment(notification1.created);
+		notification2.created = moment(notification2.created);
+
+		if (notification1.created < notification2.created) {
+			return 1;
+		}
+		else if (notification1.created > notification2.created) {
+			return -1;
+		}
+		return 0;
+	});
+
+	return callback();
 };
 
 /**
@@ -210,17 +231,6 @@ notification.getInformations = function (notification_obj, callback) {
 		doodle: function _getDoodle (done) {
 			var query = 'SELECT name FROM doodle WHERE id = ?';
 			notification.db.execute(query, [ notification_obj.doodle_id ], { prepare : true }, function (err, result) {
-				if (err || result.rows.length === 0) {
-					return done(err);
-				}
-
-				return done(null, result.rows[0]);
-			});
-		},
-		// Get the schedule information from its id
-		schedule: function _getSchedule (done) {
-			var query = 'SELECT begin_date, end_date FROM schedule WHERE id = ?';
-			notification.db.execute(query, [ notification_obj.schedule_id ], { prepare : true }, function (err, result) {
 				if (err || result.rows.length === 0) {
 					return done(err);
 				}
@@ -273,6 +283,22 @@ notification.getNotificationIdsFromUser = function (user_id, callback) {
 /**
  * SETTERS
  */
+
+/**
+*	Set the notification has been read by the user
+**/
+ notification.update = function (notification_id, user_id, callback) {
+
+ 	console.log("NOTIFICATION UPDATE");
+
+ 	var query = 'UPDATE notifications_by_user SET is_read = True WHERE user_id = ? AND notification_id = ?';
+ 	notification.db.execute(query, [ user_id, notification_id ], { prepare : true }, function (err) {
+
+ 		console.log("ERROR", err);
+
+ 		return callback(err);
+ 	});
+ };
 
 /**
  *	Set the notification as read by the user

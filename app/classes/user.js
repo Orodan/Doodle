@@ -40,13 +40,13 @@ user.prototype.save = function (callback) {
 user.getNotifications = function (user_id, callback) {
 
 	async.waterfall([
-		// Get the notification ids associated the user receive
+		// Get the notification ids the user receive
 		function _getNotificationIdsFromUser (done) {
 			Notification.getNotificationIdsFromUser(user_id, done);
 		},
 		// Get all the informations of the notifications the user receive
 		function _getNotifications (notification_ids, done) {
-			Notification.getAll(notification_ids, done);
+			Notification.getAllInformationsFromIds(notification_ids, done);
 		},
 		// Get if the notification has been read by the user
 		function _isRead (notifications, done) {
@@ -63,10 +63,13 @@ user.getNotifications = function (user_id, callback) {
 					}
 
 					notification.is_read = is_read;
+					notification.created = notification.notification_id.getDate();
 					return finish(null);
 				});
 			}, function (err) {
-				return done(err, notifications);
+				Notification.sortNotifications(notifications, function (err) {
+					return done(err, notifications);
+				});
 			});
 		}
 
@@ -105,7 +108,22 @@ user.getConfiguration = function (user_id, doodle_id, callback) {
 
 	var query = 'SELECT notification, notification_by_email FROM configuration_by_user_and_doodle WHERE user_id = ? AND doodle_id = ?';
 	user.db.execute(query, [ user_id, doodle_id ], { prepare : true }, function (err, result) {
-		if (err || result.rows.length === 0) {
+		if (err) {
+			return callback(err);
+		}
+
+		return callback(null, result.rows[0]);
+	});
+};
+
+/**
+*	Get the user statut for the specified doodle
+**/
+user.getUserStatut = function (user_id, doodle_id, callback) {
+
+	var query = 'SELECT admin_statut FROM users_by_doodle WHERE doodle_id = ? AND user_id = ?';
+	user.db.execute(query, [  doodle_id, user_id ], { prepare : true }, function (err, result) {
+		if (err) {
 			return callback(err);
 		}
 

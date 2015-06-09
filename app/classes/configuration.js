@@ -52,6 +52,18 @@ configuration.get = function (user_id, doodle_id, callback) {
 };
 
 /**
+*	Update the configuration
+**/
+configuration.update = function (user_id, doodle_id, notification_type, notification_value, callback) {
+
+	var query = 'UPDATE configuration_by_user_and_doodle SET ' + notification_type + ' = ' + notification_value + ' WHERE user_id = ? AND doodle_id = ?';
+
+	configuration.db.execute(query, [ user_id, doodle_id ], { prepare : true }, function (err) {
+		return callback(err);
+	});
+};
+
+/**
 *	Delete the configuration
 **/
 configuration.delete = function (user_id, doodle_id, callback) {
@@ -64,3 +76,4 @@ configuration.delete = function (user_id, doodle_id, callback) {
 
 
 module.exports = configuration;
+

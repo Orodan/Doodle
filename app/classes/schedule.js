@@ -71,6 +71,27 @@ schedule.get = function (id, callback) {
 };
 
 /**
+*	Delete the specified schedule
+**/
+schedule.delete = function (doodle_id, schedule_id, callback) {
+
+	var queries = [
+		{
+			query: 'DELETE FROM Schedule WHERE id = ?',
+			params: [ schedule_id ]
+		},
+		{
+			query: 'DELETE FROM schedules_by_doodle WHERE doodle_id = ? AND schedule_id = ?',
+			params: [ doodle_id, schedule_id ]
+		}
+	];
+
+	schedule.db.batch(queries, { prepare : true }, function (err) {
+		return callback(err);
+	});
+};
+
+/**
 *	Get the schedules of the doodle
 **/
 schedule.getAllSchedulesFromDoodle = function (doodle_id, callback) {
@@ -112,10 +133,6 @@ schedule.getSchedulesFromIds = function (schedule_ids, callback) {
 				result.begin_date.locale(schedule.lang);
 				result.end_date.locale(schedule.lang);
 
-				console.log('langage : ', schedule.lang);
-
-				console.log('begin_date : ', result.begin_date.format('LL'), result.begin_date.format('LT'));
-				console.log('end_date : ', result.end_date.format('LL'), result.end_date.format('LT'));
 
 				schedules.push(result);
 
