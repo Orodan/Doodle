@@ -94,17 +94,11 @@ vote.updateVotes = function (doodle_id, user_id, votes, callback) {
 **/
 vote.sortVotes = function (votes, callback) {
 
-	console.log("votes : ", votes);
-
 	async.each(votes, function (_vote, done) {
 		var query = 'SELECT begin_date from schedule where id = ?';
 		vote.db.execute(query, [ _vote.schedule_id ], { prepare : true }, function (err, result) {
 
-			console.log("schedule id : ", _vote.schedule_id);
-			console.log("ERROR : ", err);
-
 			_vote.begin_date = moment(result.rows[0].begin_date);
-
 			return done(err);
 		});
 	}, function (err) {

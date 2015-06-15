@@ -62,8 +62,8 @@ function doodle (name, description, user_id, callback) {
 **/
 doodle.prototype.save = function (callback) {
 
-	var query = 'INSERT INTO doodle (id, name, description, created) values (?, ?, ?, ?)';
-	doodle.db.execute(query, [ this.id, this.name, this.description, this.created.format() ], { prepare : true }, function (err) {
+	var query = 'INSERT INTO doodle (id, name, description, category, created) values (?, ?, ?, ?, ?)';
+	doodle.db.execute(query, [ this.id, this.name, this.description, this.category, this.created.format() ], { prepare : true }, function (err) {
 		return callback(err);
 	});
 };
@@ -97,6 +97,33 @@ doodle.getNotifIds = function (doodle_id, callback) {
 		}
 
 		return callback(null, result.rows);
+	});
+};
+
+/**
+* Verify if the user id is the admin id of the doodle	
+**/
+doodle.verifyAdminId = function (doodle_id, user_id, callback) {
+
+	var query = 'SELECT admin_statut FROM users_by_doodle WHERE doodle_id = ? AND user_id = ?';
+	doodle.db.execute(query, [ doodle_id, user_id ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		// No user found
+		if (result.rows.length === 0) {
+			return callback("The doodle you asked does not exist or you don't have access to it.");
+		}
+
+		// The user is not admin of the doodle
+		if (result.rows[0].admin_statut != 'admin') {
+			return callback(null, false);
+		}
+		// The user is admin of the doodle
+		else {
+			return callback(null, true);
+		}
 	});
 };
 
@@ -205,7 +232,11 @@ doodle.getVotesFromUser = function (id, user_id, callback) {
 **/
 doodle.getAllInformations = function (id, callback) {
 
-	async.series({
+	async.parallel({
+		validId : function (done) {
+			doodle.checkValidId(id, done);
+		},
+
 		schedules : function (done) {
 			Schedule.getAllSchedulesFromDoodle(id, done);
 		},
@@ -213,18 +244,84 @@ doodle.getAllInformations = function (id, callback) {
 		users : function (done) {
 			User.getUsersWithVotesFromDoodle(id, done);
 		},
+		
 		participation_requests : function (done) {
 			doodle.getParticipationRequests(id, done);
 		}
 	}, function (err, results) {
+		// Error
 		if (err) {
 			return callback(err);
 		}
 
+		// No id found with this id
+		if (!results.validId) {
+			return callback(null, false);
+		}
+
+		delete results.validId;
 		results.id = id;
 
 		return callback(null, results);
 
+	});
+};
+
+/**
+*	Check if the id is a doodle id
+*
+*	@return True if the id is a doodle id
+*			False otherwise
+**/
+doodle.checkValidId = function (id, callback) {
+
+	var query = 'SELECT id FROM doodle WHERE id = ?';
+	doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
+		// Error
+		if (err) {
+			return callback(err);
+		}
+
+		// No doodle found
+		if (result.rows.length === 0) {
+			return callback(null, false);
+		}
+
+		// Doodle found
+		return callback(null, true);
+	});
+};
+
+/**
+*	Check if the id is a public doodle id
+*
+*	@return True if the id is a public doodle id
+*			False otherwise
+**/
+doodle.checkPublicId = function (id, callback) {
+
+	var query = 'SELECT category FROM doodle WHERE id = ?';
+	doodle.db.execute(query, [ id ], { prepare : true }, function (err, result) {
+		// Error
+		if (err) {
+			return callback(err);
+		}
+
+		// No doodle found
+		if (result.rows.length === 0) {
+			return callback(null, false);
+		}
+
+		console.log("Category : ", result.rows[0].category);
+
+		// Public doodle
+		if (result.rows[0].category != 'public') {
+			return callback(null, false);
+		}
+		// Private doodle
+		else {
+			return callback(null, true);	
+		}
 	});
 };
 
@@ -371,12 +468,19 @@ doodle.getSchedulesFromIds = function (schedule_ids, callback) {
 **/
 doodle.get = function (id, callback) {
 
-	var query = 'SELECT * FROM Doodle.doodle WHERE id = ?';
+	var query = 'SELECT * FROM doodle WHERE id = ?';
 	doodle.db.execute(query, [ id ], { prepare : true }, function (err, data) {
 		if (err) {
+			console.log('error : ', err);
 			return callback(err);
 		}
 
+		if (data.rows.length === 0) {
+			console.log('no data');
+			return callback(null, false);
+		}
+
+		console.log('doodle : ', data);
 		var doodle_data = data.rows[0];
 		return callback(null, doodle_data);
 	});

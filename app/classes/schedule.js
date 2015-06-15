@@ -133,7 +133,6 @@ schedule.getSchedulesFromIds = function (schedule_ids, callback) {
 				result.begin_date.locale(schedule.lang);
 				result.end_date.locale(schedule.lang);
 
-
 				schedules.push(result);
 
 				return done(null);

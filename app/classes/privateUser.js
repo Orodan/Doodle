@@ -50,17 +50,17 @@ privateUser.findById = function (id, callback) {
 privateUser.prototype.save = function (callback) {
 
 	// We save the general informations about the user
-	privateUser.super_.prototype.save.call(this, callback);
+	privateUser.super_.prototype.save.call(this, function (err) {
+		// We save the informations specific to a private user
+		var query = 'INSERT INTO user_by_email (email, user_id) values (?, ?)';
+		privateUser.super_.db.execute(query, [ this.email, this.id ], { prepare : true }, function (err, result) {
+			if (err) {
+				return callback(err);
+			}
 
-	// We save the informations specific to a private user
-	var query = 'INSERT INTO user_by_email (email, user_id) values (?, ?)';
-	privateUser.super_.db.execute(query, [ this.email, this.id ], { prepare : true }, function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		return callback(null, true);
-	});
+			return callback(null, true);
+		});
+	}.bind(this));
 };
 
 /**

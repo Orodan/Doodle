@@ -273,7 +273,7 @@ module.exports = function (app, passport) {
             function _getDoodleInfos (callback) {
                 Doodle.getAllInformations(doodle_id, callback);
             },
-            function _checkUser (doodle, callback) {
+            function _formatSchedule (doodle, callback) {
 
                 var formated_schedules = {};
 
@@ -330,7 +330,6 @@ module.exports = function (app, passport) {
                         };
 
                         return callback(null, data);
-
                     });
                 }
                 // The user is not logged in
@@ -341,8 +340,6 @@ module.exports = function (app, passport) {
 
                     return callback(null, data);
                 }
-
-                
             }
         ], function (err, data) {
 
@@ -354,8 +351,6 @@ module.exports = function (app, passport) {
             if (!req.user) {
                 req.flash('message', 'You are accessing this doodle without being logged in');
             }
-
-            console.log("DOODLE : ", data.doodle);
 
             return res.render('pages/doodle', {
                 doodle: data.doodle,
@@ -461,9 +456,9 @@ module.exports = function (app, passport) {
             if (err) {
                 return res.status(500).json({ error: err });
             }
-        });
 
-        return res.status(200).end();
+            return res.status(200).end();
+        });
     });
 
     // Add to the doodle the user invited to participate
@@ -586,6 +581,9 @@ module.exports = function (app, passport) {
                     },
                     function _saveNotificationsForDoodle (done) {
                         notif.saveNotificationsForDoodle(done);
+                    },
+                    function _sendEmailNotifications (done) {
+                        notif.sendEmailNotifications (done);
                     }
                 ], function (err) {
                     return end(err);

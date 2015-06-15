@@ -10,6 +10,8 @@ var async = require('async');
  */
 function publicDoodle (name, description) {
     Doodle.call(this, name, description);
+
+    this.category = 'public';
 }
 
 // Doodle's heritage

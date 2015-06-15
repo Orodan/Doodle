@@ -26,6 +26,7 @@ var schedule = require('./app/classes/schedule');
 var vote = require('./app/classes/vote');
 var notification = require('./app/classes/notification');
 var configuration = require('./app/classes/configuration');
+var participationRequest = require('./app/classes/participationRequest');
 
 // Association model - database
 user.db = client;
@@ -43,6 +44,9 @@ notification.db = client;
 notification.timeuuid = cassandra.types.timeuuid;
 
 configuration.db = client;
+
+participationRequest.db = client;
+participationRequest.uuid = cassandra.types.uuid;
 
 require('./app/config/passport')(passport);
 
@@ -85,7 +89,7 @@ app.use(function (req, res, next) {
 require('./app/routes.js')(app, passport);	
 
 // API =========================================================================
-require('./app/api.js')(app);
+require('./app/api.js')(app, passport);
 
 // launch ======================================================================
 app.listen(3000);

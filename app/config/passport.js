@@ -1,4 +1,5 @@
 var LocalStrategy = require('passport-local').Strategy;
+var BasicStrategy = require('passport-http').BasicStrategy;
 var privateUser = require('../classes/privateUser');
 var Global = require('../classes/global');
 var Uuid = require('node-uuid');
@@ -82,6 +83,32 @@ module.exports = function (passport) {
             return done(null, user, req.flash('message', 'Welcome !'));
         });
     }
+    ));
+
+    // =========================================================================
+    // BASIC STRATEGY ==========================================================
+    // =========================================================================
+    passport.use(new BasicStrategy(
+        function (email, password, done) {
+            privateUser.findByEmail(email, function (err, user) {
+                // Error
+                if (err) { 
+                    return done(err); 
+                }
+
+                // No user found
+                if (!user) {
+                    return done(null, false);
+                }
+
+                // Wrong password
+                if (!privateUser.validPassword(password, user.password)) {
+                    return done(null, false);
+                }
+
+                return done(null, user);
+            });
+        }
     ));
 };
 

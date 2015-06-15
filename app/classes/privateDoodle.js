@@ -8,7 +8,10 @@ var async = require('async');
 *	Constructor
 **/
 function privateDoodle (name, description) {
+
 	Doodle.call(this, name, description);
+
+	this.category = 'private';
 }
 
 // Doodle's heritage

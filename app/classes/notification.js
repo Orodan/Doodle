@@ -2,6 +2,8 @@
 var async = require('async');
 var assert = require('assert');
 var moment = require('moment');
+var nodemailer = require('nodemailer');
+var smtpTransport = require('nodemailer-smtp-transport');
 
 /**
 *	Constructor
@@ -120,6 +122,161 @@ notification.prototype.saveNotificationsForDoodle = function (callback) {
 	notification.db.execute(query, [ this.doodle_id, this.notification_id ], { prepare: true }, callback);
 };
 
+/**
+*	Send email to user with the good configuration
+**/
+notification.prototype.sendEmailNotifications = function (callback) {
+
+	async.waterfall([
+		// Get the users of the doodle
+		function _getDoodleUsers (finish) {
+			var query = 'SELECT user_id FROM users_by_doodle WHERE doodle_id = ?';
+			notification.db.execute(query, [ this.doodle_id ], { prepare : true }, function (err, result){
+				if (err || result.rows.length === 0) {
+					return finish(err);
+				}
+
+				return finish(err, result.rows);
+			}.bind(this));
+		}.bind(this),
+		// Filter the users to only have the ones who have activated the notifications for this doodle
+		// The user who emited the notification does not get it no matter his configuration
+		function _getUsersWhoWantNotificationByEmail (user_ids, finish) {
+
+			var userIdsWhoWantNotifByEmail = [];
+
+			async.each(user_ids, function (user_id, end) {
+
+					// We do not send a notification to the user who provoked this notification
+					if (user_id.user_id.equals(this.user_id)) {
+						return end();
+					}
+
+					var query = 'SELECT user_id, notification_by_email FROM configuration_by_user_and_doodle WHERE user_id = ? AND doodle_id = ?';
+					notification.db.execute(query, [ user_id.user_id, this.doodle_id ], { prepare : true }, function (err, result) {
+						if (err || result.rows.length === 0) {
+							return end(err);
+						}
+
+						// Good configuration
+						if (result.rows[0].notification_by_email === true) {
+							userIdsWhoWantNotifByEmail.push(result.rows[0].user_id);
+						}
+
+						return end(err);
+					}.bind(this));
+				}.bind(this),
+				function (err) {
+					return finish(err, userIdsWhoWantNotifByEmail);
+				});
+		}.bind(this),
+
+		function _sendEmail (user_ids, finish) {
+
+			async.each(user_ids, function (_user_id, done) {
+
+				async.waterfall([
+					function _getUserEmail (end) {
+						var query = 'SELECT email FROM user WHERE id = ?';
+						notification.db.execute(query, [ _user_id ], { prepare : true }, function (err, result) {
+							if (err) {
+								return end(err);
+							}
+
+							if (result.rows.length === 0) {
+								return end(null, false);
+							}
+
+							var user_mail = result.rows[0].email;
+							return end(null, user_mail);
+						});
+					}.bind(this),
+
+					function _sendMessage (user_mail, end) {
+
+						async.parallel({
+							user_name: function _getUserName (theEnd) {
+
+								var query = 'SELECT first_name, last_name FROM user WHERE id = ?';
+								notification.db.execute(query, [ _user_id ], { prepare : true }, function (err, result) {
+									if (err) {
+										return theEnd(err);
+									}
+
+									if (result.rows.length === 0) {
+										return theEnd('No user found');
+									}
+
+									var user_name = result.rows[0].first_name + ' ' + result.rows[0].last_name;
+
+									return theEnd(null, user_name); 
+								});
+							},
+							doodle_name: function _getDoodleName (theEnd) {
+								var query = 'SELECT name FROM doodle WHERE id = ?';
+								notification.db.execute(query, [ this.doodle_id ], { prepare : true }, function (err, result) {
+									if (err) {
+										return theEnd(err);
+									}
+
+									if (result.rows.length === 0) {
+										return theEnd('No doodle found');
+									}
+
+									return theEnd(null, result.rows[0].name);
+								});
+							}.bind(this)
+						},
+						function (err, results) {
+							if (err) {
+								return end(err);
+							}
+
+							// create reusable transporter object using SMTP transport
+							var transporter = nodemailer.createTransport(smtpTransport({
+								host: 'mail.univ-lr.fr',
+								port: 25,
+								debug: true,
+								auth: {
+								        user: 'jkaspr01',
+								        pass: 'Univlr17'
+								    }
+							}));
+
+							// setup e-mail data with unicode symbols
+							var mailOptions = {
+							  from: 'doodledevmail@gmail.com', // sender address
+							  to: 'jimmykasprzak@gmail.com', // list of receivers
+							  subject: 'Doodle notification', // Subject line
+							  html: '<p><strong>' + results.user_name + '</strong> updated his/her votes on the doodle <strong> ' + results.doodle_name + ' </strong></p>' // html body
+							};
+
+							// send mail with defined transport object
+							transporter.sendMail(mailOptions, function(err){
+								console.log("Mail envoyé");
+							  return end(err);
+							});
+						}.bind(this));
+
+					}.bind(this)
+
+				], function (err) {
+					return done(err);
+				});
+
+			}.bind(this),
+			function (err) {
+				return finish(err);
+			});
+
+		}.bind(this)
+	], function (err) {
+		return callback(err);
+	});
+
+
+};
+
 /***********************************\
  *********** FUNCTIONS ************
 \***********************************/
@@ -184,7 +341,7 @@ notification.getAllInformationsFromIds = function (notification_ids, callback) {
 		});
 
 	}, function (err) {
-		
+
 		return callback(err, notification_ids);
 	});
 };
@@ -289,13 +446,8 @@ notification.getNotificationIdsFromUser = function (user_id, callback) {
 **/
  notification.update = function (notification_id, user_id, callback) {
 
- 	console.log("NOTIFICATION UPDATE");
-
  	var query = 'UPDATE notifications_by_user SET is_read = True WHERE user_id = ? AND notification_id = ?';
  	notification.db.execute(query, [ user_id, notification_id ], { prepare : true }, function (err) {
-
- 		console.log("ERROR", err);
-
  		return callback(err);
  	});
  };

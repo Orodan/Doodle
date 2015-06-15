@@ -155,12 +155,6 @@
                             <% } %>
 
                             <% if ( typeof doodle.participation_requests != 'undefined' && doodle.participation_requests.length > 0 ) { %>
-                                    <tr class="participant" style="height: 50px;">
-                                        <td class="pname"></td>
-                                        <% for (var i = 0; i < nbSchedules; i++) { %>
-                                            <td class=""></td>
-                                        <% } %>
-                                    </tr>
                                 <% for (var key in doodle.participation_requests) { %>
                                     <% var invated_user = doodle.participation_requests[key]; %>
                                         <tr class="participant invated_user">
@@ -203,10 +197,12 @@
                             
                         </tbody>
 
-                        <!-- Button trigger modal -->
-                        <div class="add-schedule">
-                            <a class="close-icon pull-right" id="btn-show-modal" href="#" data-toggle="modal" data-target="#myModal"><i class="fa fa-plus-square fa-4x"></i></a>
-                        </div>
+                        <% if (user.statut == 'admin') { %>
+                            <!-- Button trigger modal -->
+                            <div class="add-schedule">
+                                <a class="close-icon pull-right" id="btn-show-modal" href="#" data-toggle="modal" data-target="#myModal"><i class="fa fa-plus-square fa-4x"></i></a>
+                            </div>
+                        <% } %>
                     </table>
 
                 </div>
