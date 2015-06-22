@@ -34,6 +34,27 @@ user.prototype.save = function (callback) {
 	});
 };
 
+
+/**
+*	Check if the user participate to the doodle
+**/
+user.participate = function (doodle_id, user_id, callback) {
+
+	var query = 'SELECT * FROM users_by_doodle WHERE doodle_id = ? AND user_id = ?';
+	user.db.execute(query, [ doodle_id, user_id ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		// The user does not participate to the doodle
+		if (result.rows.length == 0) {
+			return callback(null, false);
+		}
+
+		return callback(null, true);
+	});
+}
+
 /**
 *	Get the notifications of the user
 **/
@@ -57,7 +78,10 @@ user.getNotifications = function (user_id, callback) {
 
 			// For each notification, we get if the user has already seen it or not
 			async.each(notifications, function (notification, finish) {
-				Notification.getIsRead(user_id, notification.notification_id, function (err, is_read) {
+
+
+
+				Notification.isRead(user_id, notification.notification_id, function (err, is_read) {
 					if (err) {
 						return finish (err);
 					}
@@ -89,7 +113,7 @@ user.getConfigurations = function (user_id, callback) {
 			user.getDoodleIdsFromUser(user_id, function (err, result) {
 				return done(err, result);
 			});
-		}, 
+		},
 		function _getConfigurationForEachDoodle (doodle_ids, done) {
 
 			async.each(doodle_ids, function _getConfiguration (doodle_id, finish) {
@@ -130,7 +154,7 @@ user.getUserStatut = function (user_id, doodle_id, callback) {
 		return callback(null, result.rows[0]);
 	});
 };
-	
+
 /**
 *	Get the participation requests associated with that user
 **/
@@ -164,7 +188,7 @@ user.getParticipationRequests = function (user_id, callback) {
 
 						doodle_infos.push(result.rows[0]);
 						return finish();
-					});	
+					});
 				}, function (err) {
 					if (err) {
 						return done(err);
@@ -174,12 +198,12 @@ user.getParticipationRequests = function (user_id, callback) {
 				});
 			}
 			else {
-				return done(null, false);	
+				return done(null, false);
 			}
 		}
 	], function (err, result) {
 		if (err) {
-			return callback(err); 
+			return callback(err);
 		}
 
 		return callback(null, result);
@@ -237,7 +261,7 @@ user.getUsersFromDoodle = function (doodle_id, callback) {
 
 		function _getUsersFromIds (user_ids, done) {
 			user.getUsersFromIds(user_ids, done);
-			
+
 		}], function (err, users) {
 			if (err) {
 				return callback(err);
@@ -267,7 +291,7 @@ user.getUsersFromIds = function (user_ids, callback) {
 
 	var users = [];
 
-	async.each(user_ids, 
+	async.each(user_ids,
 		function (user_id, done) {
 
 			user.get(user_id.user_id, function (err, result) {
@@ -384,7 +408,7 @@ user.findById = function (id, callback) {
 	user.db.execute(query, [ id ], { prepare : true }, function (err, data) {
 		if (err) {
 			callback(err);
-		} 
+		}
 		else {
 			callback(null, data.rows[0]);
 		}
@@ -427,8 +451,8 @@ user.get = function (id, callback) {
 	user.db.execute(query, [ id ], { prepare : true },
 		function (err, result) {
 			if (err) {
-				return callback(err);	
-			}  
+				return callback(err);
+			}
 			return callback(null, result.rows[0]);
 		});
 };
@@ -490,7 +514,7 @@ user.deleteVotes = function (doodle_id, user_id, callback) {
 				}
 
 				return callback(null, true);
-			});		
+			});
 		});
 	});
 };

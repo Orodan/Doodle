@@ -27,6 +27,7 @@ var vote = require('./app/classes/vote');
 var notification = require('./app/classes/notification');
 var configuration = require('./app/classes/configuration');
 var participationRequest = require('./app/classes/participationRequest');
+var validator = require('./app/classes/validator');
 
 // Association model - database
 user.db = client;
@@ -48,6 +49,8 @@ configuration.db = client;
 participationRequest.db = client;
 participationRequest.uuid = cassandra.types.uuid;
 
+validator.db = client;
+
 require('./app/config/passport')(passport);
 
 // Views
@@ -61,7 +64,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // required for passport
-app.use(session({ 	
+app.use(session({
 					secret : 'masupersessionsecrete',
 					saveUninitialized : true,
 					resave : true
@@ -80,13 +83,13 @@ i18n.configure({
 app.use(i18n.init);
 app.use(function (req, res, next) {
 	if ( !req.cookies.mylanguage ) {
-		res.cookie('mylanguage', 'en', { maxAge: 900000, httpOnly: true });	
+		res.cookie('mylanguage', 'en', { maxAge: 900000, httpOnly: true });
 	}
 	next();
 });
 
 // routes ======================================================================
-require('./app/routes.js')(app, passport);	
+require('./app/routes.js')(app, passport);
 
 // API =========================================================================
 require('./app/api.js')(app, passport);
@@ -94,7 +97,3 @@ require('./app/api.js')(app, passport);
 // launch ======================================================================
 app.listen(3000);
 console.log("The magic happens on port 3000 !");
-
-
-
-

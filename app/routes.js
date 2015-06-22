@@ -95,7 +95,7 @@ module.exports = function (app, passport) {
                 doodles : results.doodles,
                 participation_requests: results.participation_requests,
                 notifications: results.notifications
-            }); 
+            });
         });
     });
 
@@ -105,7 +105,7 @@ module.exports = function (app, passport) {
         var user_id = req.user.id;
         var notification_ids = req.body.notifications;
 
-        async.each(notification_ids, 
+        async.each(notification_ids,
             function (notification_id, callback) {
                 Notification.update(notification_id, user_id, callback);
             },
@@ -145,7 +145,7 @@ module.exports = function (app, passport) {
 
                         if (result) {
                             doodle.notification = result.notification;
-                            doodle.notification_by_email = result.notification_by_email;   
+                            doodle.notification_by_email = result.notification_by_email;
                         }
 
                         return finish(err);
@@ -166,7 +166,7 @@ module.exports = function (app, passport) {
             });
         });
     });
-    
+
     // AJAX call to update the configuration of the user on the specified doodle
     app.put('/update-user-configuration', isLoggedIn, function (req, res) {
 
@@ -261,7 +261,7 @@ module.exports = function (app, passport) {
             return res.status(200).end();
         });
     });
-    
+
     // =====================================
     // SHOW DOODLE =========================
     // =====================================
@@ -287,14 +287,14 @@ module.exports = function (app, passport) {
                     }
 
                     var day = schedule.begin_date.format('ddd D');
-                    
+
                     // Schedules already on this day ?
                     var schedulesAlreadyOnThisDay = false;
                     var _month = formated_schedules[schedule.begin_date.format('MMM YYYY')];
 
                     for (var _day in _month) {
                         if (_day == day) {
-                            schedulesAlreadyOnThisDay = true;    
+                            schedulesAlreadyOnThisDay = true;
                         }
                     }
 
@@ -317,8 +317,8 @@ module.exports = function (app, passport) {
                 data.message = req.flash('message');
 
                 // The user is logged in
-                if(req.user) {                    
-                    var user_id = req.user.id; 
+                if(req.user) {
+                    var user_id = req.user.id;
                     Doodle.getUserAccess(doodle_id, user_id, function (err, user_statut) {
                         if (err) {
                             return callback(err);
@@ -369,43 +369,6 @@ module.exports = function (app, passport) {
         async.parallel([
             function _deleteDoodle (done) {
                 Doodle.delete(req.params.id, done);
-            },
-            function _deleteNotifications (done) {
-                
-                async.waterfall([
-                    // Get notification ids and user ids of the doodle
-                    function _getNotifIdsAndUserIds (finish) {
-                        async.parallel({
-                            notification_ids: function (end) {
-                                Doodle.getNotifIds(req.params.id, end);
-                            },
-                            user_ids: function (end) {
-                                Doodle.getUsersIds(req.params.id, end);
-                            }
-                        }, function (err, results) {
-                            return finish(err, results);
-                        });
-                    },
-                    // Detele the notifications and their associations
-                    function _deleteNotifications (data, finish) {
-
-                        async.parallel([
-                            function (end) {
-                                Notification.deleteAssociationsWithUser (data, end);
-                            },
-                            function (end) {
-                                Notification.deleteAssociationsWithDoodle (req.params.id, end);
-                            },
-                            function (end) {
-                                Notification.deleteAll (data.notification_ids, end);
-                            }
-                        ], function (err) {
-                            return finish(err);
-                        });
-                    }
-                ], function (err) {
-                    return done(err);
-                });
             }
         ], function (err) {
             if (err) {
@@ -437,7 +400,7 @@ module.exports = function (app, passport) {
                 console.log("ERROR : ", err);
                 return res.status(500).end(String(err));
             }
-            
+
             return res.status(200).end();
         });
     });
@@ -567,7 +530,7 @@ module.exports = function (app, passport) {
 
         async.parallel([
             function _updateVotes (end) {
-                Vote.updateVotes(doodle_id, user_id, req.body.votes, end);        
+                Vote.updateVotes(doodle_id, user_id, req.body.votes, end);
             },
             function _createNotifications (end) {
                 var notif = new Notification (user_id, doodle_id);
@@ -653,7 +616,7 @@ module.exports = function (app, passport) {
         });
     });
 
-    // Show the public doodle 
+    // Show the public doodle
     app.get('/public-doodle/:id', function (req, res) {
 
         async.waterfall([
@@ -667,7 +630,7 @@ module.exports = function (app, passport) {
                 async.series([
                     function _getDoodleId (end) {
                         switch (statut) {
-                            case 'administrator': 
+                            case 'administrator':
                                 var admin_link_id = req.params.id;
                                 publicDoodle.getDoodleIdFromAdminLinkId(admin_link_id, function (err, _doodle_id) {
                                     doodle_id = _doodle_id;
@@ -675,10 +638,10 @@ module.exports = function (app, passport) {
                                     return end();
                                 });
                                 break;
-                            case 'user': 
+                            case 'user':
                                 doodle_id = req.params.id;
                                 return end();
-                            default: 
+                            default:
                                 return end();
                         }
                     },
@@ -702,14 +665,14 @@ module.exports = function (app, passport) {
                                     }
 
                                     var day = schedule.begin_date.format('ddd. D');
-                                    
+
                                     // Schedules already on this day ?
                                     var schedulesAlreadyOnThisDay = false;
                                     var _month = formated_schedules[schedule.begin_date.format('MMM YYYY')];
 
                                     for (var _day in _month) {
                                         if (_day == day) {
-                                            schedulesAlreadyOnThisDay = true;    
+                                            schedulesAlreadyOnThisDay = true;
                                         }
                                     }
 
@@ -729,7 +692,7 @@ module.exports = function (app, passport) {
                                 var data = {};
                                 data.doodle = doodle;
                                 data.lang = Doodle.lang;
-                                data.message = req.flash('message');    
+                                data.message = req.flash('message');
                                 data.user = {
                                     statut: statut
                                 };
@@ -738,7 +701,7 @@ module.exports = function (app, passport) {
                                 console.log("REQ SESSION : ", req.session.statut);
 
                                 return callback(null, data);
-                                
+
                             }
                         ], function (err, data) {
 
@@ -768,24 +731,6 @@ module.exports = function (app, passport) {
     // DELETE PUBLIC DOODLE ================
     // =====================================
 
-    // Delete a public doodle
-    app.get('/public-doodle/:id/remove-public-doodle', function (req, res) {
-
-        var admin_link_id = req.session.admin_link_id;
-        req.session.administration_link_id = null;
-
-        Doodle.deletePublicDoodle(req.params.id, admin_link_id, function (err, result) {
-            if (err) {
-                req.flash('message', 'An error occured : ' + err);
-            }
-            else {
-                req.flash('message', 'Doodle deleted !');
-            }
-
-            res.redirect('/');
-        });
-    });
-
     // =====================================
     // ADD PUBLIC USER =====================
     // =====================================
@@ -801,10 +746,10 @@ module.exports = function (app, passport) {
                     publicDoodle.getDoodleIdFromAdminLinkId(req.params.id, function (err, _doodle_id) {
                         doodle_id = _doodle_id;
                         return end();
-                    });        
+                    });
                 },
                 function _process (end) {
-                    
+
                     var first_name = req.body.data.user.first_name;
                     var last_name = req.body.data.user.last_name;
                     var votes = req.body.data.votes;
@@ -815,14 +760,14 @@ module.exports = function (app, passport) {
                             console.log("ERROR : ", err);
                             return res.status(500).end(String(err));
                         }
-                        
+
                         return res.status(200).end();
-                    });                    
+                    });
                 }
             ]);
         }
         else {
-            var doodle_id = req.params.id; 
+            var doodle_id = req.params.id;
 
             var first_name = req.body.data.user.first_name;
             var last_name = req.body.data.user.last_name;
@@ -831,12 +776,11 @@ module.exports = function (app, passport) {
             var public_user = new PublicUser(first_name, last_name);
             public_user.save(doodle_id, votes, function (err) {
                 if (err) {
-                    console.log("ERROR : ", err);
                     return res.status(500).end(String(err));
                 }
-                
+
                 return res.status(200).end();
-            });   
+            });
         }
     });
 
@@ -855,17 +799,17 @@ module.exports = function (app, passport) {
                 publicDoodle.getDoodleIdFromAdminLinkId(req.params.id, function (err, _doodle_id) {
                     doodle_id = _doodle_id;
                     return end();
-                });        
+                });
             },
             function _process (end) {
-                
+
                 Doodle.removeUserFromDoodle(doodle_id, user_id, function (err) {
                     if (err) {
                         return res.status(500).json({ error: err });
                     }
                 });
 
-                return res.status(200).end();                
+                return res.status(200).end();
             }
         ]);
     });
@@ -884,10 +828,10 @@ module.exports = function (app, passport) {
                 publicDoodle.getDoodleIdFromAdminLinkId(req.params.id, function (err, _doodle_id) {
                     doodle_id = _doodle_id;
                     return end();
-                });        
+                });
             },
             function _process (end) {
-                
+
                 var begin_date = req.body.schedule.begin_date;
                 var end_date = req.body.schedule.end_date;
 
@@ -897,7 +841,7 @@ module.exports = function (app, passport) {
                     }
 
                     return res.status(200).end();
-                });                   
+                });
             }
         ]);
     });
@@ -917,17 +861,17 @@ module.exports = function (app, passport) {
                 publicDoodle.getDoodleIdFromAdminLinkId(req.params.id, function (err, _doodle_id) {
                     doodle_id = _doodle_id;
                     return end();
-                });        
+                });
             },
             function _process (end) {
-                
+
                 Doodle.deleteSchedule(doodle_id, schedule_id, function (err) {
                     if (err) {
                         return res.status(500).json({ error: err });
                     }
                 });
 
-                return res.status(200).end();    
+                return res.status(200).end();
             }
         ]);
     });
@@ -946,9 +890,3 @@ module.exports = function (app, passport) {
     	res.redirect('/');
     }
 };
-
-
-
-
-
-

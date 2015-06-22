@@ -2,6 +2,7 @@
 var Doodle = require('./doodle');
 var util = require('util');
 var async = require('async');
+var moment = require('moment');
 
 /**
  * Constructor
@@ -28,7 +29,6 @@ util.inherits(publicDoodle, Doodle);
  * @returns {*}
  */
 publicDoodle.prototype.save = function (callback) {
-
     publicDoodle.super_.prototype.save.call(this, callback);
 };
 
@@ -43,6 +43,7 @@ publicDoodle.prototype.addSchedules = function (schedules, callback) {
     var doodle_id = publicDoodle.super_.prototype.getId.call(this);
 
     async.each(schedules, function _saveSchedule (schedule, done) {
+
         publicDoodle.super_.addSchedule(doodle_id, schedule.begin_date, schedule.end_date, done);
     }, function (err) {
         return callback(err);

@@ -102,7 +102,7 @@ schedule.getAllSchedulesFromDoodle = function (doodle_id, callback) {
 		},
 
 		function _getSchedulesFromIds (schedule_ids, done) {
-			schedule.getSchedulesFromIds(schedule_ids, done);			
+			schedule.getSchedulesFromIds(schedule_ids, done);
 		}
 	], function (err, results) {
 		if (err) {
@@ -120,7 +120,7 @@ schedule.getSchedulesFromIds = function (schedule_ids, callback) {
 
 	var schedules = [];
 
-	async.each(schedule_ids, 
+	async.each(schedule_ids,
 		function (schedule_id, done) {
 			schedule.get(schedule_id.schedule_id, function (err, result) {
 				if (err) {
@@ -137,7 +137,7 @@ schedule.getSchedulesFromIds = function (schedule_ids, callback) {
 
 				return done(null);
 			});
-		}, 
+		},
 
 		function (err) {
 			if (err) {
@@ -179,5 +179,3 @@ schedule.getScheduleIds = function (doodle_id, callback) {
 
 
 module.exports = schedule;
-
-

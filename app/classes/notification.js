@@ -10,7 +10,7 @@ var smtpTransport = require('nodemailer-smtp-transport');
 **/
 function notification (user_id, doodle_id) {
 
-	this.notification_id = notification.timeuuid();
+	this.id = notification.timeuuid();
 	this.user_id = user_id;
 	this.doodle_id = doodle_id;
 
@@ -20,7 +20,7 @@ function notification (user_id, doodle_id) {
  ***** PROTOTYPAL FUNCTIONS ******
 \**********************************/
 
- /**
+/**
 *	Save the notification in db
 **/
 notification.prototype.save = function (callback) {
@@ -29,8 +29,8 @@ notification.prototype.save = function (callback) {
 		// Save the notification and associate it with the doodle
 		function _saveNotification (done) {
 
-			var query = 'INSERT INTO notification (notification_id, user_id, doodle_id) values (?, ?, ?)';
-			notification.db.execute(query, [ this.notification_id, this.user_id, this.doodle_id ], { prepare : true }, function (err) {
+			var query = 'INSERT INTO notification (id, user_id, doodle_id) values (?, ?, ?)';
+			notification.db.execute(query, [ this.id, this.user_id, this.doodle_id ], { prepare : true }, function (err) {
 				return done(err);
 			});
 
@@ -99,7 +99,7 @@ notification.prototype.saveNotificationForUsers = function (callback) {
 			async.each(user_ids, function (user_id, end) {
 
 					var query = 'INSERT INTO notifications_by_user (user_id, notification_id, is_read) values (?, ?, ?)';
-					notification.db.execute(query, [ user_id, this.notification_id, false ], { prepare : true }, function (err) {
+					notification.db.execute(query, [ user_id, this.id, false ], { prepare : true }, function (err) {
 						return end(err);
 					}.bind(this));
 				}.bind(this),
@@ -119,7 +119,7 @@ notification.prototype.saveNotificationForUsers = function (callback) {
 notification.prototype.saveNotificationsForDoodle = function (callback) {
 
 	var query = 'INSERT INTO notifications_by_doodle (doodle_id, notification_id) values (?, ?)';
-	notification.db.execute(query, [ this.doodle_id, this.notification_id ], { prepare: true }, callback);
+	notification.db.execute(query, [ this.doodle_id, this.id ], { prepare: true }, callback);
 };
 
 /**
@@ -209,7 +209,7 @@ notification.prototype.sendEmailNotifications = function (callback) {
 
 									var user_name = result.rows[0].first_name + ' ' + result.rows[0].last_name;
 
-									return theEnd(null, user_name); 
+									return theEnd(null, user_name);
 								});
 							},
 							doodle_name: function _getDoodleName (theEnd) {
@@ -253,7 +253,6 @@ notification.prototype.sendEmailNotifications = function (callback) {
 
 							// send mail with defined transport object
 							transporter.sendMail(mailOptions, function(err){
-								console.log("Mail envoyé");
 							  return end(err);
 							});
 						}.bind(this));
@@ -290,7 +289,7 @@ notification.prototype.sendEmailNotifications = function (callback) {
  **/
 notification.get = function (notification_id, callback) {
 
-	var query = 'SELECT * from notification_id WHERE notification_id = ?';
+	var query = 'SELECT * from notification WHERE id = ?';
 	notification.db.execute(query, [ notification_id ], { prepare : true }, function (err, result) {
 		if (err || result.rows.length === 0) {
 			return callback(err);
@@ -316,7 +315,7 @@ notification.getAllInformationsFromIds = function (notification_ids, callback) {
 		async.waterfall([
 			function _getNotification (finish) {
 
-				var query = 'SELECT * FROM notification WHERE notification_id = ?';
+				var query = 'SELECT * FROM notification WHERE id = ?';
 				notification.db.execute(query, [ notification_data.notification_id ], { prepare : true }, function (err, result) {
 
 					if (err || result.rows.length === 0) {
@@ -397,7 +396,7 @@ notification.getInformations = function (notification_obj, callback) {
 		}
 	}, function (err, results) {
 
-		results.notification_id = notification_obj.notification_id;
+		results.id = notification_obj.id;
 		return callback(err, results);
 	});
 };
@@ -408,7 +407,7 @@ notification.getInformations = function (notification_obj, callback) {
  * @param notification_id
  * @param callback
  */
-notification.getIsRead = function (user_id, notification_id, callback) {
+notification.isRead = function (user_id, notification_id, callback) {
 
 	var query = 'SELECT is_read FROM notifications_by_user WHERE user_id = ? AND notification_id = ?';
 	notification.db.execute(query, [ user_id, notification_id ], { prepare : true }, function (err, result) {
@@ -447,21 +446,10 @@ notification.getNotificationIdsFromUser = function (user_id, callback) {
  notification.update = function (notification_id, user_id, callback) {
 
  	var query = 'UPDATE notifications_by_user SET is_read = True WHERE user_id = ? AND notification_id = ?';
- 	notification.db.execute(query, [ user_id, notification_id ], { prepare : true }, function (err) {
+ 	notification.db.execute(query, [ user_id, notification_id ], function (err) {
  		return callback(err);
  	});
  };
-
-/**
- *	Set the notification as read by the user
- **/
-notification.isRead = function (user_id, notification_id, callback) {
-
-	var query = 'UPDATE notifications_by_user SET is_read = ? WHERE user_id = ? AND notification_id = ?';
-	notification.db.execute(query, [ true, user_id, notification_id ], { prepare : true }, function (err) {
-		return callback(err);
-	});
-};
 
 /**
  * DELETE
@@ -474,7 +462,7 @@ notification.isRead = function (user_id, notification_id, callback) {
  */
 notification.delete = function (notification_id, callback) {
 
-	var query = 'DELETE FROM notification WHERE notification_id = ?';
+	var query = 'DELETE FROM notification WHERE id = ?';
 	notification.db.execute(query, [ notification_id ], { prepare : true }, function (err) {
 		return callback(err);
 	});

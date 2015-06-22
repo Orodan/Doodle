@@ -51,7 +51,7 @@ vote.getVotesFromUser = function (doodle_id, user_id, callback) {
 				}
 
 				return done(null, result.rows);
-			});		
+			});
 		},
 		function (votes, done) {
 			vote.sortVotes(votes, done);
@@ -61,7 +61,7 @@ vote.getVotesFromUser = function (doodle_id, user_id, callback) {
 			return callback(err);
 		}
 		return callback(null, sortedVotes);
-	});	
+	});
 };
 
 /**
@@ -70,7 +70,7 @@ vote.getVotesFromUser = function (doodle_id, user_id, callback) {
 vote.updateVotes = function (doodle_id, user_id, votes, callback) {
 
 	async.each(votes, function (_vote, done) {
-		
+
 		var queries = [
 			{
 				query: 'UPDATE votes_by_user SET vote = ? WHERE doodle_id = ? AND user_id = ? AND schedule_id = ?',
@@ -89,7 +89,28 @@ vote.updateVotes = function (doodle_id, user_id, votes, callback) {
 	});
 };
 
-/** 
+/**
+*	Update the vote
+**/
+vote.update = function (doodle_id, user_id, vote_data, callback) {
+
+	var queries = [
+		{
+			query: 'UPDATE votes_by_user SET vote = ? WHERE doodle_id = ? AND user_id = ? AND schedule_id = ?',
+			params: [vote_data.vote, doodle_id, user_id, vote_data.schedule_id ]
+		},
+		{
+			query: 'UPDATE votes_by_schedule SET vote = ? WHERE doodle_id = ? AND schedule_id = ? AND user_id = ?',
+			params: [vote_data.vote, doodle_id, vote_data.schedule_id, user_id ]
+		}
+	];
+
+	vote.db.batch(queries, { prepare : true }, function (err, result) {
+		return callback(err);
+	});
+};
+
+/**
 *	Sort the votes according to the time of the schedule associated
 **/
 vote.sortVotes = function (votes, callback) {
@@ -122,7 +143,7 @@ vote.sortVotes = function (votes, callback) {
 };
 
 /**
-*	Get votes of the doodle for each user 
+*	Get votes of the doodle for each user
 **/
 vote.getVotesForEachUser = function (doodle_id, users, done) {
 
@@ -151,10 +172,10 @@ vote.getVotesForEachUser = function (doodle_id, users, done) {
 
 /**
 *	Generate a default vote for every users of the doodle on the schedule
-**/	
+**/
 vote.generateDefaultVoteForSchedule = function (doodle_id, schedule_id, users, callback) {
 
-	async.each(users, 
+	async.each(users,
 		function (user, done) {
 			vote.generateDefaultVote(user.id, doodle_id, schedule_id, done);
 		},
@@ -197,5 +218,3 @@ vote.generateDefaultVote = function (user_id, doodle_id, schedule_id, callback) 
 };
 
 module.exports = vote;
-
-

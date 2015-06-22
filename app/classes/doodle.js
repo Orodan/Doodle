@@ -101,7 +101,7 @@ doodle.getNotifIds = function (doodle_id, callback) {
 };
 
 /**
-* Verify if the user id is the admin id of the doodle	
+* Verify if the user id is the admin id of the doodle
 **/
 doodle.verifyAdminId = function (doodle_id, user_id, callback) {
 
@@ -160,7 +160,7 @@ doodle.getUserAccess = function (id, user_id, callback) {
 		}
 
 		if ( data.rows.length > 0 ) {
-			return callback(null, data.rows[0].admin_statut);	
+			return callback(null, data.rows[0].admin_statut);
 		}
 		// The user does not have access to the doodle
 		else {
@@ -244,7 +244,7 @@ doodle.getAllInformations = function (id, callback) {
 		users : function (done) {
 			User.getUsersWithVotesFromDoodle(id, done);
 		},
-		
+
 		participation_requests : function (done) {
 			doodle.getParticipationRequests(id, done);
 		}
@@ -312,15 +312,13 @@ doodle.checkPublicId = function (id, callback) {
 			return callback(null, false);
 		}
 
-		console.log("Category : ", result.rows[0].category);
-
 		// Public doodle
 		if (result.rows[0].category != 'public') {
 			return callback(null, false);
 		}
 		// Private doodle
 		else {
-			return callback(null, true);	
+			return callback(null, true);
 		}
 	});
 };
@@ -471,16 +469,13 @@ doodle.get = function (id, callback) {
 	var query = 'SELECT * FROM doodle WHERE id = ?';
 	doodle.db.execute(query, [ id ], { prepare : true }, function (err, data) {
 		if (err) {
-			console.log('error : ', err);
 			return callback(err);
 		}
 
 		if (data.rows.length === 0) {
-			console.log('no data');
 			return callback(null, false);
 		}
 
-		console.log('doodle : ', data);
 		var doodle_data = data.rows[0];
 		return callback(null, doodle_data);
 	});
@@ -554,7 +549,7 @@ doodle.getDoodlesFromUser = function (user_id, callback) {
 							doodle.user_configuration = user_configuration;
 							return finish();
 						});
-					}, 
+					},
 					function (err) {
 						return end(err, doodles);
 					});
@@ -581,7 +576,7 @@ doodle.getDoodlesFromUser = function (user_id, callback) {
 **/
 doodle.getDoodleIds = function (user_id, callback) {
 
-	var query = 'SELECT doodle_id FROM Doodle.doodles_by_user WHERE user_id = ?'; 
+	var query = 'SELECT doodle_id FROM Doodle.doodles_by_user WHERE user_id = ?';
 	doodle.db.execute(query, [ user_id ], { prepare : true }, function (err, result) {
 		if (err) {
 			return callback(err);
@@ -614,7 +609,7 @@ doodle.getDoodlesFromIds = function (doodle_ids, callback) {
 		doodle.sortDoodles(doodles, function (err) {
 			return callback(err, doodles);
 		});
-	
+
 	});
 };
 
@@ -657,7 +652,7 @@ doodle.checkUserAlreadyAssociated = function (id, user_id, callback) {
 			return callback(null, true);
 		}
 		else {
-			return callback(null, false);	
+			return callback(null, false);
 		}
 	});
 };
@@ -704,6 +699,26 @@ doodle.checkUserAccess = function (id, user_id, callback) {
 	});
 };
 
+/**
+*	Check if the schedule is a part of the doodle
+**/
+doodle.hasSchedule = function (doodle_id, schedule_id, callback) {
+
+	var query = 'SELECT * FROM schedules_by_doodle WHERE doodle_id = ? AND schedule_id = ?';
+	doodle.db.execute(query, [ doodle_id, schedule_id ], { prepare : true }, function (err, result) {
+		if (err) {
+			return callback(err);
+		}
+
+		// The schedule is not a part of the doodle
+		if (result.rows.length === 0) {
+			return callback('This schedule does not belong to this doodle.');
+		}
+
+		return callback();
+	});
+};
+
 // SETTERS =================================================================
 
 /**
@@ -717,6 +732,41 @@ doodle.saveVotes = function (doodle_id, user_id, params, callback) {
 		}
 
 		return callback(null, true);
+	});
+};
+
+
+/**
+*	Update the vote in the doodle
+**/
+doodle.updateVote = function (doodle_id, user_id, vote_data, callback) {
+
+	async.parallel([
+		function _updateVotes (end) {
+			Vote.update(doodle_id, user_id, vote_data, end);
+		},
+		function _createNotifications (end) {
+			var notif = new Notification (user_id, doodle_id);
+
+			async.parallel([
+				function _saveNotif (done) {
+					notif.save(done);
+				},
+				function _saveNotificationForUsers (done) {
+					notif.saveNotificationForUsers(done);
+				},
+				function _saveNotificationsForDoodle (done) {
+					notif.saveNotificationsForDoodle(done);
+				},
+				function _sendEmailNotifications (done) {
+					notif.sendEmailNotifications (done);
+				}
+			], function (err) {
+				return end(err);
+			});
+		}
+	], function (err) {
+		return callback(err);
 	});
 };
 
@@ -996,7 +1046,7 @@ doodle.addUser = function (id, user_id, callback) {
 			config.save(done);
 		},
 		function _deleteParticipationRequest (done) {
-			
+
 			var queries = [
 				{
 					query: 'DELETE FROM doodle_requests_by_user WHERE user_id = ? AND doodle_id = ?',
@@ -1046,7 +1096,7 @@ doodle.associateDoodleUser = function (id, user_id, callback) {
 
 
 /**
-*	Add for each schedules of the doodle new undecied votes to the user 
+*	Add for each schedules of the doodle new undecied votes to the user
 **/
 doodle.addDefaultVotesToUser = function (doodle_id, user_id, callback) {
 
@@ -1055,10 +1105,10 @@ doodle.addDefaultVotesToUser = function (doodle_id, user_id, callback) {
 			doodle.getSchedules(doodle_id, done);
 		},
 		function _addDefaultVotesToUser (schedules, done) {
-			
+
 			async.each(schedules, function (schedule, end) {
 				Vote.generateDefaultVote(user_id, doodle_id, schedule.id, end);
-			}, 
+			},
 			function (err) {
 				return done(err);
 			});
@@ -1180,7 +1230,7 @@ doodle.deleteVotes = function (id, callback) {
 			var query = 'DELETE FROM Doodle.votes_by_schedule WHERE doodle_id = ?';
 			doodle.db.execute(query, [ id ], { prepare : true }, done);
 		}
-	], 
+	],
 	function (err, result) {
 		return callback(err);
 	});
@@ -1226,7 +1276,7 @@ doodle.deleteVotesOfSchedule = function (id, schedule_id, callback) {
 			}
 
 
-			// For every user on the doodle we delete the vote ( Table votes_by_user ) 
+			// For every user on the doodle we delete the vote ( Table votes_by_user )
 			doodle.deleteVoteOnUserFromSchedule(id, schedule_id, user_ids, function (err, result) {
 				if (err) {
 					return callback(err);
@@ -1279,7 +1329,7 @@ doodle.removeUserFromPublicDoodle = function (id, user_id, callback) {
 						return callback(err);
 					}
 
-					return callback(null, true);	
+					return callback(null, true);
 				});
 			});
 		});
@@ -1318,7 +1368,7 @@ doodle.removeUserFromDoodle = function (id, user_id, callback) {
 		},
 		function _removeData (done) {
 			async.parallel([
-		
+
 				function _removeAssociationDoodleUser (done) {
 					var query = 'DELETE FROM Doodle.doodles_by_user WHERE user_id = ? AND doodle_id = ?';
 					doodle.db.execute(query, [ user_id, id ], { prepare : true }, done);
@@ -1371,7 +1421,7 @@ doodle.removeUserFromDoodle = function (id, user_id, callback) {
 *	Delete on the doodle all the votes associated with the user
 **/
 doodle.deleteVotesFromUser = function (id, user_id, callback) {
-	
+
 	// We get the schedules ids associated with the user on that doodle
 	doodle.getScheduleIdsFromUser(id, user_id, function (err, schedule_ids) {
 		if (err) {
@@ -1433,6 +1483,10 @@ doodle.delete = function (id, callback) {
 		function _removeUsers (done) {
 			doodle.removeUsers(id, done);
 		},
+		// Delete the notifications associated with the doodle
+		function _deleteNotifications (done) {
+			doodle.deleteNotifications(id, done);
+		},
 		// Delete doodle itself
 		function _deleteDoodle (done) {
 			var query = 'DELETE FROM doodle WHERE id = ?';
@@ -1449,6 +1503,48 @@ doodle.delete = function (id, callback) {
 };
 
 /**
+*	Delete the notifications associated with the doodle
+**/
+doodle.deleteNotifications = function (doodle_id, callback) {
+
+	async.waterfall([
+		// Get notification ids and user ids of the doodle
+		function _getNotifIdsAndUserIds (finish) {
+			async.parallel({
+				notification_ids: function (end) {
+					doodle.getNotifIds(doodle_id, end);
+				},
+				user_ids: function (end) {
+					doodle.getUsersIds(doodle_id, end);
+				}
+			}, function (err, results) {
+				return finish(err, results);
+			});
+		},
+		// Detele the notifications and their associations
+		function _deleteNotifications (data, finish) {
+
+			async.parallel([
+				function (end) {
+					Notification.deleteAssociationsWithUser (data, end);
+				},
+				function (end) {
+					Notification.deleteAssociationsWithDoodle (doodle_id, end);
+				},
+				function (end) {
+					Notification.deleteAll (data.notification_ids, end);
+				}
+			], function (err) {
+				return finish(err);
+			});
+		}
+	], function (err) {
+		return callback(err);
+	});
+
+};
+
+/**
 *	Remove the association between the doodle and its users
 *	Delete the public users associated
 **/
@@ -1461,7 +1557,7 @@ doodle.removeUsers = function (id, callback) {
 		function (user_ids, done) {
 			async.each(user_ids, function (user_id, done) {
 				doodle.removeUser(id, user_id, done);
-			}, 
+			},
 			function (err) {
 				return done(err);
 			});
@@ -1489,7 +1585,7 @@ doodle.removeUser = function (id, user_id, callback) {
 				var statut;
 				if (result.rows.length > 0) {
 					statut = result.rows[0].statut;
-				}				
+				}
 
 				if (statut == 'temporary') {
 					var query = 'DELETE FROM user WHERE id = ?';
@@ -1498,15 +1594,15 @@ doodle.removeUser = function (id, user_id, callback) {
 				else {
 					return done(null, true);
 				}
-			});	
+			});
 		},
 		function _removeAssociation (done) {
 			doodle.removeAssociation(id, user_id, done);
 		}
-	], 
+	],
 	function (err) {
 		return callback(err);
-	});	
+	});
 };
 
 /**
@@ -1551,7 +1647,7 @@ doodle.deleteParticipationRequests = function (id, callback) {
 		function _deleteParticipationRequests (user_ids, done) {
 			async.each(user_ids, function _deleteParticipationRequest (user_id, finish) {
 				doodle.deleteParticipationRequest(id, user_id, finish);
-			}, 
+			},
 			function (err) {
 				return done(err);
 			});
@@ -1607,7 +1703,7 @@ doodle.deleteSchedules = function (id, callback) {
 
 				return done(null, schedule_ids);
 			});
-		}, 
+		},
 		function _deleteSchedules (schedule_ids, done) {
 			async.each(schedule_ids, function (schedule_id, finish) {
 				var query = 'DELETE FROM schedule WHERE id = ?';
@@ -1741,7 +1837,7 @@ doodle._processGetUsersFromIdsWithVotes = function (id, user_ids, users, key, ca
 };
 
 /**
-*	Recursive function to create for each schedules a new undecided vote 
+*	Recursive function to create for each schedules a new undecided vote
 *	( Table vote )
 **/
 doodle.__processAddDefaultVotesToUser = function (id, user_id, schedules, key, callback) {
@@ -1841,7 +1937,7 @@ doodle.__processDeleteVoteFromSchedules = function (id, user_id, schedule_ids, k
 *	( Table votes_by_user )
 **/
 doodle.__processDeleteVoteOnUserFromSchedule = function (id, schedule_id, user_ids, key, callback) {
-	
+
 	if ( user_ids.length != key ) {
 
 		var user_id = user_ids[key];
@@ -1920,4 +2016,3 @@ doodle.__processDeleteUsersFromDoodle = function (user_ids, key, callback) {
 };
 
 module.exports = doodle;
-
