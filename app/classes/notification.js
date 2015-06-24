@@ -238,8 +238,8 @@ notification.prototype.sendEmailNotifications = function (callback) {
 								port: 25,
 								debug: true,
 								auth: {
-								        user: 'jkaspr01',
-								        pass: 'Univlr17'
+								        user: '',
+								        pass: ''
 								    }
 							}));
 
