@@ -11,6 +11,8 @@ var passport = require('passport');
 var flash = require('connect-flash');
 var i18n = require('i18n');
 
+var oauthserver = require('oauth2-server');
+
 // configuration ===============================================================
 
 // Database
@@ -28,6 +30,7 @@ var notification = require('./app/classes/notification');
 var configuration = require('./app/classes/configuration');
 var participationRequest = require('./app/classes/participationRequest');
 var validator = require('./app/classes/validator');
+var model = require('./app/config/model');
 
 // Association model - database
 user.db = client;
@@ -50,6 +53,9 @@ participationRequest.db = client;
 participationRequest.uuid = cassandra.types.uuid;
 
 validator.db = client;
+model.db = client;
+
+model.uuid = cassandra.types.Uuid;
 
 require('./app/config/passport')(passport);
 
@@ -82,11 +88,20 @@ i18n.configure({
 
 app.use(i18n.init);
 app.use(function (req, res, next) {
-	if ( !req.cookies.mylanguage ) {
+	if (!req.cookies.mylanguage) {
 		res.cookie('mylanguage', 'en', { maxAge: 900000, httpOnly: true });
 	}
 	next();
 });
+
+// Oauth
+app.oauth = oauthserver({
+	model: require ('./app/config/model.js'),
+	grants: ['password', 'refresh_token'],
+	debug: true
+});
+
+app.use(app.oauth.errorHandler());
 
 // routes ======================================================================
 require('./app/routes.js')(app, passport);

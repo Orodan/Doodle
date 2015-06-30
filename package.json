@@ -22,6 +22,7 @@
     "node-uuid": "~1.4.2",
     "nodemailer": "^1.3.4",
     "nodemailer-smtp-transport": "^1.0.3",
+    "oauth2-server": "^2.4.0",
     "passport": "~0.2.1",
     "passport-http": "^0.2.2",
     "passport-local": "1.0.0"

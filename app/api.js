@@ -16,6 +16,9 @@ var Validator = require('./classes/validator');
 
 module.exports = function (app, passport) {
 
+    // Get access token 
+    app.all('/oauth/token', app.oauth.grant());
+
     // Create user
     app.post('/api/user',
         jsonRequest,
@@ -61,7 +64,7 @@ module.exports = function (app, passport) {
 
     // Get doodle data
     app.get('/api/doodle/:doodle_id',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         function (req, res) {
 
             var user_id = req.user.id;
@@ -166,7 +169,7 @@ module.exports = function (app, passport) {
 
     // Create private doodle
     app.post('/api/doodle',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -178,7 +181,7 @@ module.exports = function (app, passport) {
             async.series([
                 // Validate the doodle data is not empty and does not contain wrong data
                 function _validDoodle (done) {
-                    Validator.validDoodle(doodle_data, done)
+                    Validator.validDoodle(doodle_data, done);
                 },
 
                 function _createDoodle (done) {
@@ -206,7 +209,7 @@ module.exports = function (app, passport) {
 
     // Create participation request
     app.post('/api/doodle/:doodle_id/participation-request',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -271,7 +274,7 @@ module.exports = function (app, passport) {
         async.waterfall([
             // Validate the public doodle data is not empty and does not contain wrong data
             function _validPublicDoodle (done) {
-                Validator.validPublicDoodle(doodle_data, done)
+                Validator.validPublicDoodle(doodle_data, done);
             },
 
             function _createDoodle (done) {
@@ -317,7 +320,7 @@ module.exports = function (app, passport) {
 
     // Update configuration of the user
     app.put('/api/user',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -381,7 +384,7 @@ module.exports = function (app, passport) {
 
     // Update notification ( set it has been read by the user )
     app.put('/api/notification/:notification_id',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -436,7 +439,7 @@ module.exports = function (app, passport) {
 
     // Add a schedule to the doodle
     app.put('/api/doodle/:doodle_id/add-schedule',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -462,7 +465,7 @@ module.exports = function (app, passport) {
 
                 // Validate if the schedule data are correct
                 function _validSchedule (done) {
-                    Validator.validSchedule(schedule_data, done)
+                    Validator.validSchedule(schedule_data, done);
                 },
 
                 // Add the schedule
@@ -487,7 +490,7 @@ module.exports = function (app, passport) {
 
     // Remove a schedule from the doodle
     app.put('/api/doodle/:doodle_id/delete-schedule/:schedule_id',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -543,7 +546,7 @@ module.exports = function (app, passport) {
 
     // Update vote of the user on the doodle
     app.put('/api/doodle/:doodle_id/vote',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -591,7 +594,7 @@ module.exports = function (app, passport) {
 
     // Add the user to the doodle
     app.put('/api/doodle/:doodle_id/participate/',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -636,7 +639,7 @@ module.exports = function (app, passport) {
 
     // Remove an user from the doodle
     app.put('/api/doodle/:doodle_id/remove-user/:user_id',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -677,7 +680,7 @@ module.exports = function (app, passport) {
                         }
 
                         return done();
-                    })
+                    });
                 },
 
                 // Remove the user from the doodle
@@ -722,7 +725,7 @@ module.exports = function (app, passport) {
 
             // Validate if the schedule data are correct
             function _validSchedule (done) {
-                Validator.validSchedule(schedule_data, done)
+                Validator.validSchedule(schedule_data, done);
             },
 
             // Get doodle id from admin id
@@ -884,7 +887,7 @@ module.exports = function (app, passport) {
                     }
 
                     return done();
-                })
+                });
             },
 
             // Delete the user
@@ -917,7 +920,7 @@ module.exports = function (app, passport) {
 
     // Delete the doodle
     app.delete('/api/doodle/:doodle_id',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -963,7 +966,7 @@ module.exports = function (app, passport) {
 
     // Delete the participation request
     app.delete('/api/doodle/:doodle_id/participation-request',
-        passport.authenticate('basic', { session: false }),
+        app.oauth.authorise(),
         jsonRequest,
         function (req, res) {
 
@@ -1065,5 +1068,21 @@ module.exports = function (app, passport) {
                 'response' : 'invalid data type, must be JSON.'
             });
         }
+    }
+
+    // Validate the referer the request is coming from
+    function authenticateReferer (req, res, next) {
+
+        passport.setTenant(req.headers['referer'], function (err) {
+            if (err) {
+                res.json({
+                    'type' : 'error',
+                    'response' : err
+                });
+            }
+            else {
+                next();
+            }
+        });
     }
 };

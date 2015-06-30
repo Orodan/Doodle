@@ -68,26 +68,31 @@ privateUser.prototype.save = function (callback) {
 **/
 privateUser.findByEmail = function (email, callback) {
 
+	if (email.length === 0) {
+		return callback('No user found with that email.', false);
+	}
+
 	async.waterfall([
-		function findIdByEmail (callback) {
+		function findIdByEmail (done) {
 
 			var query = 'SELECT user_id FROM user_by_email WHERE email = ?';
 			privateUser.super_.db.execute(query, [ email ], { prepare : true }, function (err, result) {
 
 				if (err) {
-					return callback(err);
+					return done(err);
 				}
 
+				// No user found
 				if (!result.rows[0]) {
-					return callback('No user with that email');
+					return done('No user found with that email.', false);
 				}
 
-				return callback(null, result.rows[0].user_id);
+				return done(null, result.rows[0].user_id);
 			});
 		},
 
-		function getUser (user_id, callback) {
-			privateUser.super_.get(user_id, callback);	
+		function getUser (user_id, done) {
+			privateUser.super_.get(user_id, done);
 		}
 	], function (err, result) {
 		if (err) {
@@ -95,29 +100,6 @@ privateUser.findByEmail = function (email, callback) {
 		}
 
 		return callback(null, result);
-	});
-};
-
-/**
-*	Basic authentication of user
-**/
-privateUser.basicAuthentication = function (email, password, callback) {
-
-	// We check if there is an user with this email
-	privateUser.findByEmail(email, function (err, user_data) {
-		if (err) {
-			return callback(err);
-		}
-
-		if (!user_data) {
-			return callback('No user found with the email ' + email, false);
-		}
-
-		if (!privateUser.validPassword(password, user_data.password) ) {
-			return callback('Wrong password', false);
-		}
-
-		return callback(null, user_data);
 	});
 };
 

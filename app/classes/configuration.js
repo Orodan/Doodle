@@ -14,7 +14,6 @@ function configuration (user_id, doodle_id, notification, notification_by_email)
 
 	(notification) ? this.notification = notification : this.notification = default_notification;
 	(notification_by_email) ? this.notification_by_email = notification_by_email : this.notification_by_email = default_notification_by_email;
-
 }
 
 /**********************************\

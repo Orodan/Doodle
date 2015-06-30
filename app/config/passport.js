@@ -2,9 +2,14 @@ var LocalStrategy = require('passport-local').Strategy;
 var BasicStrategy = require('passport-http').BasicStrategy;
 var privateUser = require('../classes/privateUser');
 var Global = require('../classes/global');
-var Uuid = require('node-uuid');
+var async = require('async');
+var crypto = require('crypto');
+
 
 module.exports = function (passport) {
+
+	passport.crypto_algorithm = 'aes-256-ctr';
+	passport.crypto_password = null;
 
 	// =========================================================================
     // passport session setup ==================================================
@@ -44,7 +49,7 @@ module.exports = function (passport) {
                 return done(null, false, req.flash('signupMessage', 'That email is already taken.'));
             }
             else {
-                
+
                 var user = new privateUser(email, req.body.first_name, req.body.last_name, password);
                 user.save(function (err) {
                     if (err) {
@@ -53,7 +58,7 @@ module.exports = function (passport) {
 
                     return done(null, user);
                 });
-                
+
             }
         });
     }));
@@ -90,15 +95,14 @@ module.exports = function (passport) {
     // =========================================================================
     passport.use(new BasicStrategy(
         function (email, password, done) {
+
+			email = decrypt(email);
+			password = decrypt(password);
+
             privateUser.findByEmail(email, function (err, user) {
                 // Error
-                if (err) { 
-                    return done(err); 
-                }
-
-                // No user found
-                if (!user) {
-                    return done(null, false);
+                if (err) {
+                    return done(err);
                 }
 
                 // Wrong password
@@ -110,10 +114,18 @@ module.exports = function (passport) {
             });
         }
     ));
+
+	function encrypt(text){
+		var cipher = crypto.createCipher(passport.crypto_algorithm, passport.crypto_password);
+		var crypted = cipher.update(text,'utf8','hex');
+		crypted += cipher.final('hex');
+		return crypted;
+	}
+
+	function decrypt(text, tenant){
+		var decipher = crypto.createDecipher(passport.crypto_algorithm, passport.crypto_password);
+		var dec = decipher.update(text,'hex','utf8');
+		dec += decipher.final('utf8');
+		return dec;
+	}
 };
-
-
-
-
-
-
