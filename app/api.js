@@ -64,7 +64,7 @@ module.exports = function (app, passport) {
 
     // Get doodle data
     app.get('/api/doodle/:doodle_id',
-        app.oauth.authorise(),
+        authorise,
         function (req, res) {
 
             var user_id = req.user.id;
@@ -119,7 +119,6 @@ module.exports = function (app, passport) {
     app.get('/api/public-doodle/:doodle_id', function (req, res) {
 
         var doodle_id = req.params.doodle_id;
-
         var doodle_data = null;
 
         async.series([
@@ -169,7 +168,7 @@ module.exports = function (app, passport) {
 
     // Create private doodle
     app.post('/api/doodle',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -209,7 +208,7 @@ module.exports = function (app, passport) {
 
     // Create participation request
     app.post('/api/doodle/:doodle_id/participation-request',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -268,7 +267,6 @@ module.exports = function (app, passport) {
     app.post('/api/public-doodle', jsonRequest, function (req, res) {
 
         var doodle_data = req.body;
-
         var new_doodle = null;
 
         async.waterfall([
@@ -320,7 +318,7 @@ module.exports = function (app, passport) {
 
     // Update configuration of the user
     app.put('/api/user',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -384,7 +382,7 @@ module.exports = function (app, passport) {
 
     // Update notification ( set it has been read by the user )
     app.put('/api/notification/:notification_id',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -439,7 +437,7 @@ module.exports = function (app, passport) {
 
     // Add a schedule to the doodle
     app.put('/api/doodle/:doodle_id/add-schedule',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -490,7 +488,7 @@ module.exports = function (app, passport) {
 
     // Remove a schedule from the doodle
     app.put('/api/doodle/:doodle_id/delete-schedule/:schedule_id',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -546,7 +544,7 @@ module.exports = function (app, passport) {
 
     // Update vote of the user on the doodle
     app.put('/api/doodle/:doodle_id/vote',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -594,7 +592,7 @@ module.exports = function (app, passport) {
 
     // Add the user to the doodle
     app.put('/api/doodle/:doodle_id/participate/',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -639,7 +637,7 @@ module.exports = function (app, passport) {
 
     // Remove an user from the doodle
     app.put('/api/doodle/:doodle_id/remove-user/:user_id',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -920,7 +918,7 @@ module.exports = function (app, passport) {
 
     // Delete the doodle
     app.delete('/api/doodle/:doodle_id',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -966,7 +964,7 @@ module.exports = function (app, passport) {
 
     // Delete the participation request
     app.delete('/api/doodle/:doodle_id/participation-request',
-        app.oauth.authorise(),
+        authorise,
         jsonRequest,
         function (req, res) {
 
@@ -1063,26 +1061,28 @@ module.exports = function (app, passport) {
             next();
         }
         else {
-            res.json({
+            return res.json({
                 'type' : 'error',
                 'response' : 'invalid data type, must be JSON.'
             });
         }
     }
 
-    // Validate the referer the request is coming from
-    function authenticateReferer (req, res, next) {
+    // Check oauth2 authentication
+    function authorise(req, res, next) {
 
-        passport.setTenant(req.headers['referer'], function (err) {
+        // Handle error to be consistent with the error handling for the api
+        app.oauth.authorise()(req, res, function (err) {
             if (err) {
-                res.json({
-                    'type' : 'error',
-                    'response' : err
-                });
+                return res.status(401).json({
+                      type: 'error',
+                      response: err.message
+                    });
             }
             else {
-                next();
+                next();    
             }
         });
     }
+
 };

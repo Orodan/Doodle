@@ -98,10 +98,10 @@ app.use(function (req, res, next) {
 app.oauth = oauthserver({
 	model: require ('./app/config/model.js'),
 	grants: ['password', 'refresh_token'],
-	debug: true
+	passthroughErrors: true
 });
 
-app.use(app.oauth.errorHandler());
+// app.use(app.oauth.errorHandler());
 
 // routes ======================================================================
 require('./app/routes.js')(app, passport);
