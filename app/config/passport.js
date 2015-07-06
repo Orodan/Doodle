@@ -5,7 +5,6 @@ var Global = require('../classes/global');
 var async = require('async');
 var crypto = require('crypto');
 
-
 module.exports = function (passport) {
 
 	passport.crypto_algorithm = 'aes-256-ctr';
@@ -19,12 +18,12 @@ module.exports = function (passport) {
 	// passport needs ability to serialize and unserialize users out of session
 
 	passport.serializeUser(function (user, done) {
-		done(null, user.id);
+		return done(null, user.id);
 	});
 
 	passport.deserializeUser(function (id, done) {
 		privateUser.findById(id, function (err, user) {
-			done(err, user);
+			return done(err, user);
 		});
 	});
 

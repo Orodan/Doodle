@@ -32,6 +32,8 @@ var participationRequest = require('./app/classes/participationRequest');
 var validator = require('./app/classes/validator');
 var model = require('./app/config/model');
 
+var oauth2 = require('./app/config/oauth2');
+
 // Association model - database
 user.db = client;
 user.uuid = cassandra.types.uuid;
@@ -101,7 +103,17 @@ app.oauth = oauthserver({
 	passthroughErrors: true
 });
 
-// app.use(app.oauth.errorHandler());
+app.get('/test/authorize', oauth2.authorization);
+app.post('/dialog/authorize/decision', oauth2.decision);
+app.post('/test/oauth/token', oauth2.token);
+
+app.get('/api/userinfo', function (req, res) {
+	res.json({
+		user_id: req.user.id,
+		first_name: req.user.first_name,
+		last_name: req.user.last_name
+	});
+});
 
 // routes ======================================================================
 require('./app/routes.js')(app, passport);
