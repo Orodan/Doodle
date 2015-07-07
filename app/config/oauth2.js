@@ -43,8 +43,6 @@ server.deserializeClient(function (id, done) {
 server.grant(oauth2orize.grant.code(function (client, redirectURI, user, ares, callback) {
 	var code = uid(16);
 
-	console.log("CODE : ", code);
-
 	db.authorizationCodes.save(code, client.client_id, redirectURI, user.id, function (err) {
 		if (err) { return callback(err); }
 
@@ -77,7 +75,7 @@ server.exchange(oauth2orize.exchange.code(function (client, code, redirectURI, c
 
 // user authorization endpoint
 exports.authorization = [
-	isLoggedIn,
+	passport.authenticate('basic', { session: false}),
 	server.authorization(function (clientId, redirectUri, callback) {
 		db.clients.findById(clientId, function (err, client) {
 			if (err) { return callback(err); }
@@ -90,7 +88,6 @@ exports.authorization = [
   		req.body = {};
   		req.body.transaction_id = req.oauth2.transactionID;
   		next();
-  		console.log("VERIF");
   	},
   	server.decision()
 	/** function (req, res) {
