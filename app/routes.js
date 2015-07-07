@@ -397,7 +397,6 @@ module.exports = function (app, passport) {
         var public_user = new PublicUser(first_name, last_name);
         public_user.save(doodle_id, votes, function (err) {
             if (err) {
-                console.log("ERROR : ", err);
                 return res.status(500).end(String(err));
             }
 
@@ -698,7 +697,6 @@ module.exports = function (app, passport) {
                                 };
 
                                 req.session.statut = statut;
-                                console.log("REQ SESSION : ", req.session.statut);
 
                                 return callback(null, data);
 
@@ -757,7 +755,6 @@ module.exports = function (app, passport) {
                     var public_user = new PublicUser(first_name, last_name);
                     public_user.save(doodle_id, votes, function (err) {
                         if (err) {
-                            console.log("ERROR : ", err);
                             return res.status(500).end(String(err));
                         }
 

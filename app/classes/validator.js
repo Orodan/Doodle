@@ -429,16 +429,12 @@ validator.validVote = function (doodle_id, vote_data, callback) {
         // Validate the schedule is match a schedule from the doodle specified
         function _validScheduleIsFromDoodle (done) {
 
-            console.log("_validScheduleIsFromDoodle");
-
             var query = 'SELECT * FROM schedules_by_doodle WHERE doodle_id = ? AND schedule_id = ?';
             validator.db.execute(query, [ doodle_id, vote_data.schedule_id ], { prepare : true }, function (err, result) {
                 if (err) {
                     errors.push(err);
                     return done(true);
                 }
-
-                console.log("RESULT : ", result);
 
                 if (result.rows.length === 0) {
                     errors.push('This schedule does not belong to this doodle.');

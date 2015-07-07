@@ -1,9 +1,12 @@
 var LocalStrategy = require('passport-local').Strategy;
 var BasicStrategy = require('passport-http').BasicStrategy;
+var BearerStrategy = require('passport-http-bearer').Strategy;
 var privateUser = require('../classes/privateUser');
 var Global = require('../classes/global');
 var async = require('async');
 var crypto = require('crypto');
+
+var db = require('../db');
 
 module.exports = function (passport) {
 
@@ -95,8 +98,8 @@ module.exports = function (passport) {
     passport.use(new BasicStrategy(
         function (email, password, done) {
 
-			email = decrypt(email);
-			password = decrypt(password);
+			// email = decrypt(email);
+			// password = decrypt(password);
 
             privateUser.findByEmail(email, function (err, user) {
                 // Error
@@ -113,6 +116,32 @@ module.exports = function (passport) {
             });
         }
     ));
+
+    /**
+     * BearerStrategy
+     *
+     * This strategy is used to authenticate users based on an access token (aka a
+     * bearer token).  The user must have previously authorized a client
+     * application, which is issued an access token to make requests on behalf of
+     * the authorizing user.
+     */
+     passport.use(new BearerStrategy(
+        function(accessToken, done) {
+            db.accessTokens.find(accessToken, function(err, token) {
+                if (err) { return done(err); }
+                if (!token) { return done(null, false); }
+
+                db.users.find(token.user_id, function(err, user) {
+                    if (err) { return done(err); }
+                    if (!user) { return done(null, false); }
+
+                    var info = { scope: '*' };
+                    return done(null, user, info);
+                });
+            });
+        }
+    ));
+
 
 	function encrypt(text){
 		var cipher = crypto.createCipher(passport.crypto_algorithm, passport.crypto_password);

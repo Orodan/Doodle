@@ -103,15 +103,13 @@ app.oauth = oauthserver({
 	passthroughErrors: true
 });
 
-app.get('/test/authorize', oauth2.authorization);
-app.post('/dialog/authorize/decision', oauth2.decision);
-app.post('/test/oauth/token', oauth2.token);
+app.get('/api/authorize', oauth2.authorization);
+// app.post('/dialog/authorize/decision', oauth2.decision);
+app.post('/api/oauth/token', oauth2.token);
 
-app.get('/api/userinfo', function (req, res) {
+app.get('/api/oauth/code', function (req, res) {
 	res.json({
-		user_id: req.user.id,
-		first_name: req.user.first_name,
-		last_name: req.user.last_name
+		code: req.query.code
 	});
 });
 

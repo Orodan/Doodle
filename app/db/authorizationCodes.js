@@ -15,13 +15,8 @@ exports.find = function (code, callback) {
 
 	var query = 'SELECT code, client_id, redirect_uri, user_id FROM oauth_authorization_code WHERE code = ?';
 	db.execute(query, [ code ], { prepare : true }, function (err, result) {
-		if (err) {
-			return callback(err);
-		}
-
-		if (result.rows.length === 0) {
-			return callback();
-		}
+		if (err) { return callback(err); }
+		if (result.rows.length === 0) { return callback(); }
 
 		return callback(null, result.rows[0]);
 	});

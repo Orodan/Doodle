@@ -10,3 +10,14 @@ exports.save = function (token, userId, clientId, callback) {
 		return callback(err);
 	});
 };
+
+exports.find = function (token, callback) {
+
+	var query = 'SELECT access_token, expires, client_id, user_id) FROM oauth_access_tokens WHERE access_token = ?';
+	db.execute(query, [ token ], { prepare : true }, function (err, result) {
+		if (err) { return callback(err); }
+		if (result.rows.length === 0) { return callback(); }
+		
+		return callback(null, result.rows[0]);
+	});
+};

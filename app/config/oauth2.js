@@ -23,26 +23,6 @@ passport.use(new ClientPasswordStrategy(
     }
 ));
 
-// Basic strategy
-passport.use(new BasicStrategy(
-	function (email, password, done) {
-
-		// email = decrypt(email);
-		// password = decrypt(password);
-
-	    privateUser.findByEmail(email, function (err, user) {
-	        if (err) { return done(err); }
-
-	        // Wrong password
-	        if (!privateUser.validPassword(password, user.password)) {
-	            return done(null, false);
-	        }
-
-	        return done(null, user);
-	    });
-	}
-));
-
 // create OAuth 2.0 server
 var server = oauth2orize.createServer();
 
@@ -53,7 +33,6 @@ server.serializeClient(function (client, done) {
 
 server.deserializeClient(function (id, done) {
 	db.clients.findById(id, function (err, client) {
-		console.log(client);
 		return done(err, client);
 	});
 });
@@ -63,6 +42,8 @@ server.deserializeClient(function (id, done) {
 // Grant authorization codes.
 server.grant(oauth2orize.grant.code(function (client, redirectURI, user, ares, callback) {
 	var code = uid(16);
+
+	console.log("CODE : ", code);
 
 	db.authorizationCodes.save(code, client.client_id, redirectURI, user.id, function (err) {
 		if (err) { return callback(err); }
@@ -77,10 +58,10 @@ server.exchange(oauth2orize.exchange.code(function (client, code, redirectURI, c
 	db.authorizationCodes.find(code, function (err, authCode) {
 
 		if (err) { return callback(err); }
-		if (authCode === undefined) { console.log("1"); return callback(null, false); }
+		if (authCode === undefined) { return callback(null, false); }
 		// Id are uuid object, can't compare them with only '==='
-		if (!client.client_id.equals(authCode.client_id)) { console.log("2"); return callback(null, false); }
-		if (redirectURI !== authCode.redirectURI) { console.log("3"); return callback(null, false); }
+		if (!client.client_id.equals(authCode.client_id)) { return callback(null, false); }
+		if (redirectURI !== authCode.redirectURI) { return callback(null, false); }
 
 		// Delete the authorization code and generate access token 
 		db.authorizationCodes.delete(code, function (err) {
@@ -88,7 +69,6 @@ server.exchange(oauth2orize.exchange.code(function (client, code, redirectURI, c
 			var token = uid(256);
 			db.accessTokens.save(token, authCode.user_id, authCode.client_id, function (err) {
 				if (err) { return callback(err); }
-				console.log("RETURN TOKEN : ", token);
 				return callback(null, token);
 			});
 		});
@@ -97,8 +77,7 @@ server.exchange(oauth2orize.exchange.code(function (client, code, redirectURI, c
 
 // user authorization endpoint
 exports.authorization = [
-	// login.ensureLoggedIn(),
-	passport.authenticate('basic', { session : false }),
+	isLoggedIn,
 	server.authorization(function (clientId, redirectUri, callback) {
 		db.clients.findById(clientId, function (err, client) {
 			if (err) { return callback(err); }
@@ -106,20 +85,35 @@ exports.authorization = [
 			return callback(null, client, redirectUri);
 		});
 	}),
-	function (req, res) {
+	// Skip the user allow process
+	function (req, res, next) {
+  		req.body = {};
+  		req.body.transaction_id = req.oauth2.transactionID;
+  		next();
+  		console.log("VERIF");
+  	},
+  	server.decision()
+	/** function (req, res) {
 		return res.render('pages/dialog', {
 			transactionID: req.oauth2.transactionID,
 			user: req.user,
 			client: req.oauth2.client
 		});
-	}
+	} **/
 ];
 
 // user decision endpoint
+/**
+*	For the integration in OAE, we don't want the user to always have to confirm the access
+*   to interact with the app, so we skip the decision endpoint of the user to automaticaly allow
+*	access of the user data for OAE.
+**/
+/**
 exports.decision = [
   login.ensureLoggedIn(),
   server.decision()
 ];
+**/
 
 // token endpoint
 exports.token = [
@@ -170,5 +164,8 @@ function isLoggedIn (req, res, next) {
 		return next();
 	}
 
-	res.redirect('/');
+	return res.status(403).json({
+		'type': 'error',
+		'response': 'You are not logged in.'
+	});
 }

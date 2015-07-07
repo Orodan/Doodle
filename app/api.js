@@ -16,9 +16,6 @@ var Validator = require('./classes/validator');
 
 module.exports = function (app, passport) {
 
-    // Get access token 
-    app.all('/oauth/token', app.oauth.grant());
-
     // Create user
     app.post('/api/user',
         jsonRequest,
@@ -64,7 +61,7 @@ module.exports = function (app, passport) {
 
     // Get doodle data
     app.get('/api/doodle/:doodle_id',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         function (req, res) {
 
             var user_id = req.user.id;
@@ -168,7 +165,7 @@ module.exports = function (app, passport) {
 
     // Create private doodle
     app.post('/api/doodle',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -208,7 +205,7 @@ module.exports = function (app, passport) {
 
     // Create participation request
     app.post('/api/doodle/:doodle_id/participation-request',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -318,7 +315,7 @@ module.exports = function (app, passport) {
 
     // Update configuration of the user
     app.put('/api/user',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -382,7 +379,7 @@ module.exports = function (app, passport) {
 
     // Update notification ( set it has been read by the user )
     app.put('/api/notification/:notification_id',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -437,7 +434,7 @@ module.exports = function (app, passport) {
 
     // Add a schedule to the doodle
     app.put('/api/doodle/:doodle_id/add-schedule',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -488,7 +485,7 @@ module.exports = function (app, passport) {
 
     // Remove a schedule from the doodle
     app.put('/api/doodle/:doodle_id/delete-schedule/:schedule_id',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -544,7 +541,7 @@ module.exports = function (app, passport) {
 
     // Update vote of the user on the doodle
     app.put('/api/doodle/:doodle_id/vote',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -592,7 +589,7 @@ module.exports = function (app, passport) {
 
     // Add the user to the doodle
     app.put('/api/doodle/:doodle_id/participate/',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -637,7 +634,7 @@ module.exports = function (app, passport) {
 
     // Remove an user from the doodle
     app.put('/api/doodle/:doodle_id/remove-user/:user_id',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -918,7 +915,7 @@ module.exports = function (app, passport) {
 
     // Delete the doodle
     app.delete('/api/doodle/:doodle_id',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -964,7 +961,7 @@ module.exports = function (app, passport) {
 
     // Delete the participation request
     app.delete('/api/doodle/:doodle_id/participation-request',
-        authorise,
+        passport.authenticate('bearer', { session: false }),
         jsonRequest,
         function (req, res) {
 
@@ -1066,23 +1063,6 @@ module.exports = function (app, passport) {
                 'response' : 'invalid data type, must be JSON.'
             });
         }
-    }
-
-    // Check oauth2 authentication
-    function authorise(req, res, next) {
-
-        // Handle error to be consistent with the error handling for the api
-        app.oauth.authorise()(req, res, function (err) {
-            if (err) {
-                return res.status(401).json({
-                      type: 'error',
-                      response: err.message
-                    });
-            }
-            else {
-                next();    
-            }
-        });
     }
 
 };
