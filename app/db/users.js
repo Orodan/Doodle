@@ -10,6 +10,17 @@ exports.find = function (id, callback) {
 		if (err) { return callback(err); }
 		if (result.rows.length === 0) { return callback(); }
 
-		return callback(null, result.rows.length === 0);
+		return callback(null, result.rows[0]);
+	});
+};
+
+exports.findByEmail = function (email, callback) {
+
+	var query = 'SELECT email, user_id FROM user_by_email WHERE email = ?';
+	db.execute(query, [ email ], { prepare : true }, function (err, result) {
+		if (err) { return callback(err); }
+		if (result.rows.length === 0) { return callback(); }
+
+		return callback(null, result.rows[0]);
 	});
 };

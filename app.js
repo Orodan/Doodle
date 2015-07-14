@@ -108,6 +108,7 @@ app.get('/api/authorize', oauth2.authorization);
 app.post('/api/oauth/token', oauth2.token);
 
 app.get('/api/oauth/code', function (req, res) {
+
 	res.json({
 		code: req.query.code
 	});

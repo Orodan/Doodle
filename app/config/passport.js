@@ -101,10 +101,33 @@ module.exports = function (passport) {
 			// email = decrypt(email);
 			// password = decrypt(password);
 
+            // Find the user id thanks to his/her email
+            db.users.findByEmail(email, function (err, user) {
+                if (err) { return done(err); }
+                if (!user) { console.log("Invalid email"); console.log("Done : ", done); return done(null, false, { message: "Invalid email" }); }
+
+                // Find the user data thanks to his/her id
+                db.users.find(user.user_id, function (err, user_data) {
+                    if (err) { return done(err); }
+                    if (!user_data) { return done(null, false, { type: 'error', response: 'Invalid user id.' }); }
+
+                    // Verify password
+                    if (!privateUser.validPassword(password, user_data.password)) {
+                        return done(null, false, { type: 'error', response: 'Invalid password.' });
+                    }
+
+                    return done(null, user_data);
+                });
+            });
+
+            /**
             privateUser.findByEmail(email, function (err, user) {
                 // Error
                 if (err) {
-                    return done(err);
+                    return done({
+                        'type': 'error',
+                        'response': err
+                    });
                 }
 
                 // Wrong password
@@ -114,6 +137,7 @@ module.exports = function (passport) {
 
                 return done(null, user);
             });
+            **/
         }
     ));
 
@@ -129,11 +153,20 @@ module.exports = function (passport) {
         function(accessToken, done) {
             db.accessTokens.find(accessToken, function(err, token) {
                 if (err) { return done(err); }
-                if (!token) { return done(null, false); }
+                if (!token) { return done(null, false, { message: 'Invalid token' }); }
+
+                // Verify here the access token has not expired
+                var tokenExpires = new Date(token.expires);
+                var now = new Date();
+
+                // Token expired
+                if (tokenExpires < now) {
+                    return done(null, false, { message : 'Token expired' });
+                }
 
                 db.users.find(token.user_id, function(err, user) {
                     if (err) { return done(err); }
-                    if (!user) { return done(null, false); }
+                    if (!user) { return done(null, false, { message: 'Invalid user' }); }
 
                     var info = { scope: '*' };
                     return done(null, user, info);

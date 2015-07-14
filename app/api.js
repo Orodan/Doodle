@@ -14,6 +14,8 @@ var async = require('async');
 var util = require('util');
 var Validator = require('./classes/validator');
 
+var db = require('./db');
+
 module.exports = function (app, passport) {
 
     // Create user
@@ -58,6 +60,34 @@ module.exports = function (app, passport) {
     // ============================
     // PRIVATE DOODLE =============
     // ============================
+
+    app.get('/api/user/checkEmail', function (req, res) {
+
+        var email = req.query.email;
+
+        db.users.findByEmail(email, function (err, user) {
+            if (err) { 
+                return res.status(500).json({
+                    'type': 'error',
+                    'response': err
+                });
+            }
+
+            // console.log("User : ", user);
+
+            if (user) {
+                return res.json({
+                    'type': 'success',
+                    'response': 'non available'
+                });
+            }
+
+            return res.json({
+                'type': 'success',
+                'response': 'available'
+            });
+        });
+    });
 
     // Get doodle data
     app.get('/api/doodle/:doodle_id',
@@ -165,7 +195,27 @@ module.exports = function (app, passport) {
 
     // Create private doodle
     app.post('/api/doodle',
-        passport.authenticate('bearer', { session: false }),
+        function (req, res, next) {
+            passport.authenticate('bearer', { session: false }, function (err, user, info) {               
+                if (err) { return next(err); }
+                if (!user) { 
+                    var arrayInfo = info.split('=');
+                    var error_description = arrayInfo[arrayInfo.length - 1];
+                    error_description = error_description.replace(/"/g, '');
+
+                    return res.status(401).json({
+                        type: 'error',
+                        response: error_description
+                    });
+                }
+
+                console.log("User : ", user);
+                req.logIn(user, function (err) {
+                    return next(err);
+                });
+
+            })(req, res, next);
+        },
         jsonRequest,
         function (req, res) {
 

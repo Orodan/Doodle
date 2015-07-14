@@ -7,7 +7,11 @@ var oauth2orize = require('oauth2orize'),
 	login = require('connect-ensure-login'),
 	db = require('../db');
 
+var async = require('async');
+
 var privateUser = require('../classes/privateUser');
+
+var access_token_expire = 3600; // An hour
 
 // Passport strategies setup
 // Client strategy
@@ -64,18 +68,96 @@ server.exchange(oauth2orize.exchange.code(function (client, code, redirectURI, c
 		// Delete the authorization code and generate access token 
 		db.authorizationCodes.delete(code, function (err) {
 			if (err) { return callback(err); }
-			var token = uid(256);
-			db.accessTokens.save(token, authCode.user_id, authCode.client_id, function (err) {
+
+			var access_token = uid(256);
+			var refresh_token = uid(256);
+
+			async.parallel([
+				// Save the access token generated
+				function _saveAccessToken (done) {
+					db.accessTokens.save(access_token, authCode.user_id, authCode.client_id, access_token_expire, function (err) {
+						if (err) { return done(err); }
+						return done(null, access_token);
+					});
+				},
+				// Save the refresh token generated
+				function _saveRefreshToken (done) {
+					db.refreshTokens.save(refresh_token, access_token, function (err) {
+						if (err) { return done(err); }
+						return done(null, refresh_token);
+					});
+				}
+			], function (err) {
 				if (err) { return callback(err); }
-				return callback(null, token);
+
+				return callback(null, access_token, refresh_token, { 'expires_in' : access_token_expire});
 			});
+		});
+	});
+}));
+
+// Exchange refresh token for a new valid access token
+server.exchange(oauth2orize.exchange.refreshToken(function (client, refreshToken, callback) {
+
+	// Verify the refresh token
+	db.refreshTokens.find(refreshToken, function (err, refreshTokenData) {
+		if (err) { return callback(err); }
+
+		if (!refreshTokenData) { return callback(null, false); }
+
+		var newAccessToken = uid(256);
+
+		async.waterfall([
+			// Get the access token data
+			function _getAccessTokenData (done) {
+				db.accessTokens.find(refreshTokenData.access_token, function (err, accessTokenDB) {
+					if (err) { return done(err); }
+					if (!accessTokenDB) { return callback(null, false); }
+
+					return done(null, accessTokenDB);
+				});
+			},
+			// Save the new access token generated 
+			function _saveNewAccessToken (accessTokenDB, done) {
+				db.accessTokens.save(newAccessToken, accessTokenDB.user_id, accessTokenDB.client_id, access_token_expire, done);
+			},
+			// Associate the refresh token with the new access token
+			function _bindRefreshTokenAccessToken (done) {
+				db.refreshTokens.updateAccessToken(refreshToken, newAccessToken, done);
+			},
+			// Delete the old access token expired
+			function _deleteOldAccessToken (done) {
+				db.accessTokens.delete(refreshTokenData.access_token, done);
+			}
+		], function (err) {
+			if (err) { return callback(err); }
+
+			return callback(null, newAccessToken);
 		});
 	});
 }));
 
 // user authorization endpoint
 exports.authorization = [
-	passport.authenticate('basic', { session: false}),
+	// passport.authenticate('basic', { session: false}),
+	function (req, res, next) {
+		passport.authenticate('basic', { session : false }, function (err, user) {
+			if (err) { return next(err); }
+			if (!user) {
+				return res.status(401).json({
+					type: 'error',
+					response: 'Invalid credentials.'
+				});
+			}
+
+			// Log in the user
+			req.logIn(user, function(err) {
+				if (err) { return next(err); }
+				next();
+		    });
+
+		})(req, res, next);
+	},
 	server.authorization(function (clientId, redirectUri, callback) {
 		db.clients.findById(clientId, function (err, client) {
 			if (err) { return callback(err); }
@@ -166,3 +248,4 @@ function isLoggedIn (req, res, next) {
 		'response': 'You are not logged in.'
 	});
 }
+
